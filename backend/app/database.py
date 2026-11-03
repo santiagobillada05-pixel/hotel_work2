@@ -1,27 +1,58 @@
 """Database configuration and connection management."""
 
 import json
+import os
+import shutil
 from sqlalchemy import create_engine, text, event
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 from app.config import get_settings
 
 settings = get_settings()
 
+# Sincronización y persistencia en Railway u otros entornos en contenedor con volumen /app/data
+volume_dir = "/app/data"
+volume_db = "/app/data/hotelwork.db"
+seed_db = "/app/hotelwork.db"
+database_url = settings.DATABASE_URL
+
+if os.path.exists(volume_dir):
+    # Si DATABASE_URL usa la ruta por defecto relativa, redirigirla al volumen
+    if database_url == "sqlite:///./hotelwork.db":
+        database_url = f"sqlite:///{volume_db}"
+
+    # Siempre que exista la base de datos local que subimos (seed_db), reemplazamos la del volumen
+    if os.path.exists(seed_db):
+        try:
+            # Limpiar archivos temporales de WAL/journal previos para evitar conflictos de bloqueo o corrupción
+            for extra in [volume_db + "-wal", volume_db + "-shm", volume_db + "-journal"]:
+                if os.path.exists(extra):
+                    try:
+                        os.remove(extra)
+                    except Exception:
+                        pass
+            shutil.copy2(seed_db, volume_db)
+            print("[database] Base de datos local copiada y reemplazada en el volumen (/app/data/hotelwork.db) con éxito.")
+        except Exception as e:
+            print(f"[database] Error copiando la base de datos al volumen: {e}")
+
 connect_args = {}
-if settings.DATABASE_URL.startswith("sqlite"):
+if database_url.startswith("sqlite"):
     connect_args["check_same_thread"] = False
 
-engine = create_engine(settings.DATABASE_URL, connect_args=connect_args)
+engine = create_engine(database_url, connect_args=connect_args)
 
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
-    """Configura pragmas de SQLite para integridad referencial y alta concurrencia."""
-    if settings.DATABASE_URL.startswith("sqlite"):
-        cursor = dbapi_connection.cursor()
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.execute("PRAGMA journal_mode=WAL")
-        cursor.execute("PRAGMA busy_timeout=5000")
-        cursor.close()
+    """Configura pragmas de SQLite para integridad referencial y concurrencia."""
+    if database_url.startswith("sqlite"):
+        try:
+            cursor = dbapi_connection.cursor()
+            cursor.execute("PRAGMA foreign_keys=ON")
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA busy_timeout=5000")
+            cursor.close()
+        except Exception as e:
+            print(f"[database] Advertencia al configurar PRAGMA de SQLite: {e}")
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
@@ -31,28 +62,6 @@ class Base(DeclarativeBase):
 
 def init_db() -> None:
     """Initializes the database by creating all tables."""
-    import os
-    import shutil
-    
-    # Si estamos en Railway (existe /app/data)
-    volume_db = "/app/data/hotelwork.db"
-    seed_db = "/app/hotelwork.db"
-    
-    if os.path.exists("/app/data") and os.path.exists(seed_db):
-        # Sobrescribir si no existe, o si existe pero pesa menos de 100KB (base de datos vacía)
-        needs_copy = False
-        if not os.path.exists(volume_db):
-            needs_copy = True
-        elif os.path.getsize(volume_db) < 100000:
-            needs_copy = True
-            
-        if needs_copy:
-            try:
-                shutil.copy2(seed_db, volume_db)
-                print("[init_db] Base de datos local restaurada en el volumen de Railway con éxito.")
-            except Exception as e:
-                print(f"[init_db] Error copiando la base de datos: {e}")
-
     import app.models  # noqa: F401
     Base.metadata.create_all(bind=engine)
     _migrate_image_urls()
