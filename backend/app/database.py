@@ -9,13 +9,17 @@ from app.config import get_settings
 
 settings = get_settings()
 
-# Sincronización y persistencia en Railway u otros entornos en contenedor con volumen /app/data
+# Sincronización y persistencia en Railway u otros entornos en contenedor con volumen /app/data (solo para SQLite)
 volume_dir = "/app/data"
 volume_db = "/app/data/hotelwork.db"
 seed_db = "/app/hotelwork.db"
 database_url = settings.DATABASE_URL
 
-if os.path.exists(volume_dir):
+# Compatibilidad con Supabase / Heroku / Neon que entregan postgres:// en vez de postgresql://
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+
+if database_url.startswith("sqlite") and os.path.exists(volume_dir):
     # Si DATABASE_URL usa la ruta por defecto relativa, redirigirla al volumen
     if database_url == "sqlite:///./hotelwork.db":
         database_url = f"sqlite:///{volume_db}"
@@ -35,11 +39,15 @@ if os.path.exists(volume_dir):
         except Exception as e:
             print(f"[database] Error copiando la base de datos al volumen: {e}")
 
-connect_args = {}
+engine_kwargs = {}
 if database_url.startswith("sqlite"):
-    connect_args["check_same_thread"] = False
+    engine_kwargs["connect_args"] = {"check_same_thread": False}
+else:
+    # Pool settings para bases de datos cliente-servidor (PostgreSQL/Supabase, MySQL)
+    engine_kwargs["pool_pre_ping"] = True
+    engine_kwargs["pool_recycle"] = 300
 
-engine = create_engine(database_url, connect_args=connect_args)
+engine = create_engine(database_url, **engine_kwargs)
 
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -64,8 +72,9 @@ def init_db() -> None:
     """Initializes the database by creating all tables."""
     import app.models  # noqa: F401
     Base.metadata.create_all(bind=engine)
-    _migrate_image_urls()
-    _migrate_currency_to_cop()
+    if database_url.startswith("sqlite"):
+        _migrate_image_urls()
+        _migrate_currency_to_cop()
     _seed_default_admin()
 
 def _seed_default_admin() -> None:

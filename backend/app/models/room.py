@@ -35,7 +35,7 @@ class Room(Base):
     amenities = Column(Text, nullable=True)  # JSON string: ["wifi", "minibar", ...]
     status = Column(SAEnum(RoomStatus), default=RoomStatus.available, nullable=False)
     floor = Column(String(10), nullable=True)
-    image_url = Column(String(500), nullable=True)      # Legacy compat field
+    image_url = Column(Text, nullable=True)              # Legacy compat field (supports URLs and Base64)
     image_urls_json = Column(Text, nullable=True)        # JSON array of ordered URLs
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), nullable=False)

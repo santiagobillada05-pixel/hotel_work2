@@ -1,14 +1,18 @@
 """Application configuration settings."""
 
+import os
+from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from functools import lru_cache
+
+_BACKEND_DIR = Path(__file__).resolve().parent.parent
 
 class Settings(BaseSettings):
     """Configuration settings for HotelWork backend."""
     APP_NAME: str = "HotelWork"
     DEBUG: bool = False
     DATABASE_URL: str = "sqlite:///./hotelwork.db"
-    SECRET_KEY: str
+    SECRET_KEY: str = "hotelwork-super-secret-jwt-key-2025-change-in-production-secure"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
@@ -18,7 +22,11 @@ class Settings(BaseSettings):
     DEFAULT_ADMIN_EMAIL: str = "agudelosantiago.inedan@gmail.com"
     DEFAULT_ADMIN_PASSWORD: str = "Luissanti0820"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8')
+    model_config = SettingsConfigDict(
+        env_file=(".env", str(_BACKEND_DIR / ".env")),
+        env_file_encoding='utf-8',
+        extra="ignore"
+    )
 
     @property
     def cors_origins_list(self) -> list[str]:
