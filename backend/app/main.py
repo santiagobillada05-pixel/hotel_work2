@@ -53,6 +53,8 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["X-Debug-Path"] = request.url.path
+    response.headers["X-Debug-Raw-Path"] = request.scope.get("raw_path", b"").decode("utf-8", "ignore")
     return response
 
 # CORS
@@ -123,16 +125,22 @@ async def global_exception_handler(request: Request, exc: Exception):
     )
 
 
-# Register Routers under /api/v1
-API_V1_PREFIX = "/api/v1"
-app.include_router(auth_router, prefix=API_V1_PREFIX)
-app.include_router(users_router, prefix=API_V1_PREFIX)
-app.include_router(rooms_router, prefix=API_V1_PREFIX)
-app.include_router(reservations_router, prefix=API_V1_PREFIX)
-app.include_router(payments_router, prefix=API_V1_PREFIX)
-app.include_router(reports_router, prefix=API_V1_PREFIX)
-app.include_router(notifications_router, prefix=API_V1_PREFIX)
-app.include_router(checkouts_router, prefix=API_V1_PREFIX)
+# Register Routers under /api/v1, /v1, and root for maximum proxy/Vercel flexibility
+routers = [
+    auth_router,
+    users_router,
+    rooms_router,
+    reservations_router,
+    payments_router,
+    reports_router,
+    notifications_router,
+    checkouts_router,
+]
+
+for r in routers:
+    app.include_router(r, prefix="/api/v1")
+    app.include_router(r, prefix="/v1")
+    app.include_router(r)
 
 
 @app.get("/", tags=["General"])
