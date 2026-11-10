@@ -18,7 +18,7 @@ def get_user_notifications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """RF10: Obtiene la lista de notificaciones del usuario autenticado."""
+    """Obtiene la lista de notificaciones del usuario autenticado."""
     notifications = (
         db.query(Notification)
         .filter(Notification.user_id == current_user.id)
@@ -39,7 +39,7 @@ def mark_all_notifications_as_read(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """RF10: Marca todas las notificaciones no leídas del usuario autenticado como leídas."""
+    """Marca todas las notificaciones no leídas del usuario autenticado como leídas."""
     db.query(Notification).filter(
         Notification.user_id == current_user.id,
         Notification.is_read == False,
@@ -55,7 +55,7 @@ def mark_notification_as_read(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """RF10: Marca una notificación como leída."""
+    """Marca una notificación como leída."""
     notification = db.query(Notification).filter(Notification.id == id).first()
     if not notification:
         raise NotFoundException(f"Notificación con ID {id} no encontrada")

@@ -54,7 +54,7 @@ export default function DashboardPage() {
       <div className="min-h-[calc(100vh-4rem)] flex items-center justify-center bg-slate-50 dark:bg-slate-900/50">
         <div className="text-center">
           <Loader2 className="w-10 h-10 animate-spin text-brand-600 mx-auto mb-3" />
-          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Cargando reporte administrativo (RF09)...</p>
+          <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">Cargando reporte administrativo...</p>
         </div>
       </div>
     );
@@ -95,7 +95,7 @@ export default function DashboardPage() {
               Panel de Control Administrativo
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-              RF09: Indicadores clave de desempeño, ocupación hotelera e ingresos
+              Indicadores clave de desempeño, ocupación hotelera e ingresos
             </p>
           </div>
 

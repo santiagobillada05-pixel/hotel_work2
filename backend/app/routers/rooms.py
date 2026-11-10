@@ -33,31 +33,26 @@ def search_available_rooms(
     db: Session = Depends(get_db),
 ):
     """
-    RF02: Busqueda de habitaciones disponibles por rango de fechas, tipo, precio y capacidad.
-    Excluye habitaciones ocupadas por reservas activas (pending, confirmed, checked_in) en ese rango.
+    Búsqueda de habitaciones disponibles por rango de fechas, tipo, precio y capacidad.
+    Excluye únicamente habitaciones donde el huésped ya confirmó entrada (check-in)
+    y aún no ha confirmado salida (check-out), o cuyo estado operativo sea 'occupied'.
     """
     if check_out <= check_in:
         raise BadRequestException("La fecha de check-out debe ser posterior a check-in")
 
-    # Subquery of room IDs that have overlapping active reservations
-    overlapping_subquery = (
+    # Subquery de habitaciones que tienen huéspedes con check-in activo (entrada confirmada y no salida)
+    checked_in_subquery = (
         db.query(Reservation.room_id)
         .filter(
-            Reservation.status.in_([
-                ReservationStatus.pending,
-                ReservationStatus.confirmed,
-                ReservationStatus.checked_in,
-            ]),
-            Reservation.check_in_date < check_out,
-            Reservation.check_out_date > check_in,
+            Reservation.status == ReservationStatus.checked_in,
         )
         .subquery()
     )
 
     query = db.query(Room).filter(
         Room.is_active == True,
-        Room.status == RoomStatus.available,
-        ~Room.id.in_(overlapping_subquery.select()),
+        Room.status != RoomStatus.occupied,
+        ~Room.id.in_(checked_in_subquery.select()),
     )
 
     if room_type:
@@ -120,7 +115,7 @@ def create_room(
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_role(UserRole.admin)),
 ):
-    """RF04: Crear una nueva habitacion (solo administrador)."""
+    """Crear una nueva habitacion (solo administrador)."""
     existing = db.query(Room).filter(Room.room_number == room_in.room_number.strip()).first()
     if existing:
         raise ConflictException(f"Ya existe una habitacion con el numero {room_in.room_number}")
@@ -154,7 +149,7 @@ def update_room(
     db: Session = Depends(get_db),
     staff_or_admin: User = Depends(require_role(UserRole.admin, UserRole.staff)),
 ):
-    """RF04: Actualizar datos de una habitacion (admin y staff)."""
+    """Actualizar datos de una habitacion (admin y staff)."""
     room = db.query(Room).filter(Room.id == id).first()
     if not room:
         raise NotFoundException(f"Habitacion con ID {id} no encontrada")
@@ -196,7 +191,7 @@ def update_room_status(
     db: Session = Depends(get_db),
     staff_or_admin: User = Depends(require_role(UserRole.admin, UserRole.staff)),
 ):
-    """RF04: Cambiar el estado operativo de una habitacion (available, maintenance, cleaning, occupied)."""
+    """Cambiar el estado operativo de una habitacion (available, occupied)."""
     room = db.query(Room).filter(Room.id == id).first()
     if not room:
         raise NotFoundException(f"Habitacion con ID {id} no encontrada")
@@ -214,7 +209,7 @@ def delete_room(
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_role(UserRole.admin)),
 ):
-    """RF04: Desactivar habitacion (soft-delete, solo administrador)."""
+    """Desactivar habitacion (soft-delete, solo administrador)."""
     room = db.query(Room).filter(Room.id == id).first()
     if not room:
         raise NotFoundException(f"Habitacion con ID {id} no encontrada")

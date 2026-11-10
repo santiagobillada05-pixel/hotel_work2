@@ -278,9 +278,9 @@ export default function RoomDetailPage() {
                 <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
                   room.is_room_bookable
                     ? "text-emerald-600 bg-emerald-50"
-                    : "text-rose-600 bg-rose-50"
+                    : "text-blue-600 bg-blue-50"
                 }`}>
-                  {room.guest_status_label || (room.is_room_bookable ? "Disponible" : "Fuera de servicio")}
+                  {room.guest_status_label || (room.is_room_bookable ? "Disponible" : "Ocupada")}
                 </span>
               </div>
 
@@ -301,11 +301,11 @@ export default function RoomDetailPage() {
                   </button>
                 </div>
               ) : !room.is_room_bookable ? (
-                <div className="text-center py-8 px-4 bg-rose-50 border border-rose-100 rounded-2xl">
-                  <AlertCircle className="w-10 h-10 text-rose-500 mx-auto mb-3 opacity-80" />
-                  <h4 className="text-sm font-bold text-rose-900 mb-2">Habitación no disponible</h4>
-                  <p className="text-xs text-rose-700 font-medium">
-                    Esta habitación se encuentra fuera de servicio y no puede ser reservada en este momento.
+                <div className="text-center py-8 px-4 bg-blue-50 border border-blue-100 rounded-2xl">
+                  <AlertCircle className="w-10 h-10 text-blue-500 mx-auto mb-3 opacity-80" />
+                  <h4 className="text-sm font-bold text-blue-900 mb-2">Habitación Ocupada</h4>
+                  <p className="text-xs text-blue-700 font-medium">
+                    Esta habitación se encuentra ocupada actualmente por un huésped y no puede ser reservada en este momento.
                   </p>
                 </div>
               ) : (

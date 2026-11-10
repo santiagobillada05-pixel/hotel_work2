@@ -188,7 +188,7 @@ export default function Navbar() {
             <AppearanceMenu />
             {isAuthenticated ? (
               <div className="flex items-center gap-2 sm:gap-3">
-                {/* RF10: Notification Bell */}
+                {/* Notification Bell */}
                 <NotificationBell />
 
                 <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900/50 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">

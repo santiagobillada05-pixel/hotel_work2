@@ -52,7 +52,7 @@ def list_users(
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_role(UserRole.admin)),
 ):
-    """RF11: Lista de usuarios del sistema (solo administrador)."""
+    """Lista de usuarios del sistema (solo administrador)."""
     query = db.query(User)
     if role:
         query = query.filter(User.role == role)

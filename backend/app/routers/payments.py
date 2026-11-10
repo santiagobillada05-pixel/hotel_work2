@@ -25,7 +25,7 @@ def register_payment(
     staff_or_admin: User = Depends(require_role(UserRole.admin, UserRole.staff)),
 ):
     """
-    RF07, RF10: Registrar un pago contra una reserva.
+    Registrar un pago contra una reserva.
     Calcula si el total pagado cubre el monto final de la reserva.
     """
     reservation = db.query(Reservation).filter(Reservation.id == payment_in.reservation_id).first()
@@ -204,7 +204,7 @@ def update_payment_status(
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_role(UserRole.admin)),
 ):
-    """RF07: Modifica el estado de un pago (solo admin)."""
+    """Modifica el estado de un pago (solo admin)."""
     payment = db.query(Payment).filter(Payment.id == id).first()
     if not payment:
         raise NotFoundException(f"Pago con ID {id} no encontrado")

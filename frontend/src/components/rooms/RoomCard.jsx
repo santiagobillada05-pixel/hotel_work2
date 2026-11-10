@@ -64,10 +64,10 @@ export default function RoomCard({ room, onSelect }) {
           </div>
         )}
 
-        {/* Badge Fuera de Servicio */}
+        {/* Badge Ocupada */}
         {!room.is_room_bookable && (
-          <div className="absolute inset-x-0 bottom-0 bg-rose-600/90 backdrop-blur-md text-white text-center py-2.5 text-xs font-bold pointer-events-none z-20">
-            Mantenimiento
+          <div className="absolute inset-x-0 bottom-0 bg-blue-600/90 backdrop-blur-md text-white text-center py-2.5 text-xs font-bold pointer-events-none z-20">
+            Ocupada
           </div>
         )}
       </div>
@@ -133,7 +133,7 @@ export default function RoomCard({ room, onSelect }) {
               disabled
               className="bg-slate-200 text-slate-500 dark:text-slate-400 font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm cursor-not-allowed flex items-center gap-1.5"
             >
-              No disponible
+              Ocupada
             </button>
           )}
         </div>

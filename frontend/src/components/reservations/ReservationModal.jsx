@@ -258,12 +258,12 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                 />
               </div>
 
-              {/* Price Breakdown / RF06 Auto Tariff Calculation */}
+              {/* Price Breakdown */}
               {calculations ? (
                 <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 space-y-2">
                   <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">
                     <Receipt className="w-3.5 h-3.5 text-brand-600" />
-                    Desglose de Tarifas (RF06)
+                    Desglose de Tarifas
                   </div>
                   <div className="flex justify-between text-xs text-slate-600 dark:text-slate-300">
                     <span>

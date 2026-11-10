@@ -25,7 +25,7 @@ El menú principal del Staff incluye:
 1. El huésped entrega las llaves al finalizar su estancia.
 2. Verifique que la reserva tenga el **Pago Confirmado** y balance en $0.
 3. Haga clic en **"Check-out"**.
-4. La habitación quedará libre para limpieza y la reserva pasará a la lista de "Pagados".
+4. La habitación quedará disponible automáticamente para nuevos huéspedes y la reserva pasará a la lista de "Pagados".
 
 ## 5. Solución de problemas comunes
 | Problema | Causa Posible | Solución |

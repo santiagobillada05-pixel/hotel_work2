@@ -110,7 +110,7 @@ export default function ManageUsersPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-slate-50 tracking-tight flex items-center gap-2.5">
               <Users className="w-7 h-7 text-brand-600" />
-              Gestión de Usuarios (RF11)
+              Gestión de Usuarios
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
               Consulta usuarios, edita datos de contacto y controla el estado de las cuentas

@@ -75,6 +75,7 @@ def init_db() -> None:
     if database_url.startswith("sqlite"):
         _migrate_image_urls()
         _migrate_currency_to_cop()
+    _migrate_clean_room_statuses()
     _seed_default_admin()
 
 def _seed_default_admin() -> None:
@@ -181,4 +182,23 @@ def _migrate_currency_to_cop() -> None:
                 print(f"[init_db] Migrated {len(rows)} room(s) from USD to COP successfully.")
         except Exception as e:
             print(f"[init_db] Warning during currency migration: {e}")
+
+
+def _migrate_clean_room_statuses() -> None:
+    """
+    Migration: Ensures that rooms in 'cleaning' or 'maintenance' statuses
+    are automatically normalized to 'available'. Only 'available' and 'occupied'
+    are operational statuses.
+    """
+    with engine.connect() as conn:
+        try:
+            res = conn.execute(
+                text("UPDATE rooms SET status = 'available' WHERE status IN ('cleaning', 'maintenance')")
+            )
+            conn.commit()
+            if res.rowcount and res.rowcount > 0:
+                print(f"[init_db] Normalized {res.rowcount} room(s) to 'available'.")
+        except Exception as e:
+            print(f"[init_db] Note during room status normalization: {e}")
+
 

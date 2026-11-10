@@ -96,7 +96,7 @@ La interfaz de HotelWork es limpia y se adapta a su rol.
 
 #### Check-in y Check-out
 - **Check-in (Entrada):** Cuando el huésped llegue, busque su reserva en el panel de **Recepción**. Haga clic en **"Realizar Check-in"**. El estado de la habitación cambiará automáticamente a *Ocupada*.
-- **Check-out (Salida):** Al finalizar la estancia, busque la habitación o reserva, verifique que los pagos estén completos y haga clic en **"Realizar Check-out"**. La habitación pasará a estado de *Limpieza*.
+- **Check-out (Salida):** Al finalizar la estancia, busque la habitación o reserva, verifique que los pagos estén completos y haga clic en **"Realizar Check-out"**. La habitación pasará automáticamente a estar *Disponible*.
 
 #### Registro de Pagos
 1. Vaya a la sección de **Pagos** o acceda desde los detalles de la reserva.
@@ -117,7 +117,7 @@ La interfaz de HotelWork es limpia y se adapta a su rol.
 #### Gestión de Habitaciones (Inventario)
 1. Vaya a **Gestión de Habitaciones**.
 2. **Crear:** Añada nuevas habitaciones (número, tipo, precio base, capacidad).
-3. **Modificar estado:** Puede cambiar manualmente el estado de una habitación a *Mantenimiento* o *Limpieza*.
+3. **Modificar estado:** Puede consultar o alternar el estado de una habitación entre *Disponible* u *Ocupada* (el sistema actualiza el estado automáticamente con el Check-in y Check-out).
 4. **Eliminar:** Puede dar de baja una habitación (no se borra el historial gracias al borrado lógico/soft-delete).
 
 ---
@@ -148,7 +148,7 @@ La interfaz de HotelWork es limpia y se adapta a su rol.
 4. Verifique el "Balance Pendiente".
 5. Si hay saldo, haga clic en **"Registrar Pago"**, seleccione el método (ej. Tarjeta) y apruebe.
 6. Una vez el balance esté en 0, haga clic en **"Check-out"**. 
-7. La habitación queda libre para limpieza.
+7. La habitación queda disponible automáticamente para nuevos huéspedes.
 
 ---
 

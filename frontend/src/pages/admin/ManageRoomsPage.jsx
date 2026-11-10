@@ -147,7 +147,7 @@ export default function ManageRoomsPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-slate-50 tracking-tight flex items-center gap-2.5">
               <BedDouble className="w-7 h-7 text-brand-600" />
-              Gestion de Habitaciones (RF04)
+              Gestión de Habitaciones
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
               Crea, edita, cambia el estado operativo y administra el inventario de habitaciones
@@ -242,21 +242,15 @@ export default function ManageRoomsPage() {
                           className={"text-xs font-bold rounded-xl px-2.5 py-1.5 border focus:outline-none focus:ring-2 focus:ring-brand-500 " + (
                             room.status === "available"
                               ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                              : room.status === "occupied"
-                              ? "bg-blue-50 text-blue-700 border-blue-200"
-                              : room.status === "cleaning"
-                              ? "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-rose-50 text-rose-700 border-rose-200"
+                              : "bg-blue-50 text-blue-700 border-blue-200"
                           )}
                         >
                           <option value="available">Disponible</option>
                           <option value="occupied">Ocupada</option>
-                          <option value="cleaning">Limpieza</option>
-                          <option value="maintenance">Mantenimiento</option>
                         </select>
-                        {!room.is_room_bookable && (
-                          <span className="block mt-1.5 text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded w-fit">
-                            Fuera de servicio para huéspedes
+                        {room.status === "occupied" && (
+                          <span className="block mt-1.5 text-[10px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded w-fit">
+                            Ocupada actualmente
                           </span>
                         )}
                       </td>

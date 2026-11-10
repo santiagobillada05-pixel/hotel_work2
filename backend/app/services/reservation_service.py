@@ -49,23 +49,20 @@ def check_room_availability(
     exclude_reservation_id: Optional[int] = None,
 ) -> bool:
     """
-    Checks if a room is available for the given date range.
-    A room is unavailable if it has an overlapping reservation that is active
-    (pending, confirmed, or checked_in).
+    Checks if a room is available for reservation.
+    Una habitación solo no está disponible si actualmente se encuentra ocupada
+    (el huésped confirmó entrada con check-in y aún no ha confirmado salida).
     """
     room = db.query(Room).filter(Room.id == room_id, Room.is_active == True).first()
     if not room:
         raise NotFoundException(f"Habitación con ID {room_id} no encontrada o inactiva")
 
+    if room.status == RoomStatus.occupied:
+        return False
+
     query = db.query(Reservation).filter(
         Reservation.room_id == room_id,
-        Reservation.status.in_([
-            ReservationStatus.pending,
-            ReservationStatus.confirmed,
-            ReservationStatus.checked_in,
-        ]),
-        Reservation.check_in_date < check_out,
-        Reservation.check_out_date > check_in,
+        Reservation.status == ReservationStatus.checked_in,
     )
 
     if exclude_reservation_id:

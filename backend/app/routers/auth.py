@@ -47,7 +47,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 @router.post("/login", response_model=dict)
 def login(credentials: UserLogin, db: Session = Depends(get_db)):
-    """RF01: Inicia sesión y genera tokens JWT."""
+    """Inicia sesión y genera tokens JWT."""
     user = db.query(User).filter(User.email == credentials.email.lower()).first()
     if not user or not verify_password(credentials.password, user.hashed_password):
         raise UnauthorizedException("Credenciales inválidas. Verifique correo o contraseña")

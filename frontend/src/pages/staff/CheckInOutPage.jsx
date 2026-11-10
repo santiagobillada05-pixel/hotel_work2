@@ -72,7 +72,7 @@ export default function CheckInOutPage() {
     try {
       await reservationsApi.checkOut(id);
       await fetchReservations();
-      alert('Check-out realizado exitosamente. La reserva fue procesada y pasó a la Lista de Pagados / Conteo.');
+      alert('Check-out realizado exitosamente. La habitación ahora está disponible automáticamente y pasó a la Lista de Pagados.');
     } catch (err) {
       alert(err.message || 'Error al realizar Check-out');
     } finally {

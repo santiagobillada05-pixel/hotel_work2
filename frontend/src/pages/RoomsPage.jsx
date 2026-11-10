@@ -51,7 +51,7 @@ export default function RoomsPage() {
     setError(null);
     try {
       if (checkIn && checkOut) {
-        // RF02: Search available rooms by date
+        // Search available rooms by date
         const response = await roomsApi.getAvailableRooms({
           check_in: checkIn,
           check_out: checkOut,
@@ -97,7 +97,7 @@ export default function RoomsPage() {
           </p>
         </div>
 
-        {/* RF02: Search & Filter Box */}
+        {/* Search & Filter Box */}
         <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-10">
           <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
             {/* Check-in */}

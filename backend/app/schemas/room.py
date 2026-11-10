@@ -145,10 +145,11 @@ class RoomResponse(BaseModel):
         if self.image_urls and not self.image_url:
             self.image_url = self.image_urls[0]
             
-        if self.status != RoomStatus.available:
+        if self.status == RoomStatus.occupied:
             self.is_room_bookable = False
-            self.guest_status_label = "Fuera de servicio"
+            self.guest_status_label = "Ocupada"
         else:
+            self.status = RoomStatus.available
             self.is_room_bookable = True
             self.guest_status_label = "Disponible"
             

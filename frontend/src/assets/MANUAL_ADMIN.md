@@ -23,7 +23,7 @@ Si está evaluando el sistema, puede utilizar las siguientes cuentas preconfigur
 ## 3. Gestión de Habitaciones (Inventario)
 1. Vaya a **Gestión de Habitaciones**.
 2. **Crear:** Añada nuevas habitaciones. Puede subir imágenes directamente desde su computadora o ingresar URLs (soporte hasta 10 fotos). Defina número, tipo, precio base y capacidad.
-3. **Modificar estado:** Puede cambiar manualmente el estado de una habitación a *Mantenimiento* o *Limpieza*.
+3. **Modificar estado:** Puede consultar o alternar el estado operativo entre *Disponible* u *Ocupada* (el sistema actualiza el estado automáticamente con el Check-in y Check-out).
 4. **Eliminar:** Puede dar de baja una habitación (no se borra el historial gracias al borrado lógico/soft-delete).
 
 ## 4. Gestión de Usuarios y Empleados

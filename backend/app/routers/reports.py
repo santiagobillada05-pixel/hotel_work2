@@ -20,14 +20,12 @@ def get_dashboard_summary(
     admin_user: User = Depends(require_role(UserRole.admin)),
 ):
     """
-    RF09: Resumen de métricas operativas clave para el panel administrativo.
+    Resumen de métricas operativas clave para el panel administrativo.
     """
     # Rooms breakdown
     total_rooms = db.query(Room).filter(Room.is_active == True).count()
-    available_rooms = db.query(Room).filter(Room.is_active == True, Room.status == RoomStatus.available).count()
     occupied_rooms = db.query(Room).filter(Room.is_active == True, Room.status == RoomStatus.occupied).count()
-    maintenance_rooms = db.query(Room).filter(Room.is_active == True, Room.status == RoomStatus.maintenance).count()
-    cleaning_rooms = db.query(Room).filter(Room.is_active == True, Room.status == RoomStatus.cleaning).count()
+    available_rooms = max(0, total_rooms - occupied_rooms)
 
     # Occupancy rate calculation
     occupancy_rate = round((occupied_rooms / total_rooms * 100), 1) if total_rooms > 0 else 0.0
@@ -59,8 +57,6 @@ def get_dashboard_summary(
             "occupancy_rate": occupancy_rate,
             "occupied_rooms": occupied_rooms,
             "available_rooms": available_rooms,
-            "cleaning_rooms": cleaning_rooms,
-            "maintenance_rooms": maintenance_rooms,
             "total_reservations": total_reservations,
             "active_reservations": active_reservations,
             "total_revenue": round(float(total_revenue_completed), 2),
@@ -71,8 +67,6 @@ def get_dashboard_summary(
         "room_status_breakdown": [
             {"name": "Disponibles", "value": available_rooms, "color": "#10B981"},
             {"name": "Ocupadas", "value": occupied_rooms, "color": "#3B82F6"},
-            {"name": "Limpieza", "value": cleaning_rooms, "color": "#F59E0B"},
-            {"name": "Mantenimiento", "value": maintenance_rooms, "color": "#EF4444"},
         ],
     }
 
@@ -84,7 +78,7 @@ def get_revenue_report(
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_role(UserRole.admin)),
 ):
-    """RF09: Reporte de ingresos desglosado por método de pago."""
+    """Reporte de ingresos desglosado por método de pago."""
     breakdown = (
         db.query(Payment.payment_method, func.sum(Payment.amount / Payment.exchange_rate), func.count(Payment.id))
         .filter(Payment.status == PaymentStatus.completed)
@@ -109,7 +103,7 @@ def export_reservations_csv(
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_role(UserRole.admin)),
 ):
-    """RF09: Exporta el historial de reservas en formato CSV descargable para auditoría/Excel."""
+    """Exporta el historial de reservas en formato CSV descargable para auditoría/Excel."""
     import io
     import csv
     from fastapi.responses import Response
@@ -152,7 +146,7 @@ def export_revenue_csv(
     db: Session = Depends(get_db),
     admin_user: User = Depends(require_role(UserRole.admin)),
 ):
-    """RF09: Exporta transacciones de pago completadas en formato CSV."""
+    """Exporta transacciones de pago completadas en formato CSV."""
     import io
     import csv
     from fastapi.responses import Response

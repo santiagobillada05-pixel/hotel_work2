@@ -32,17 +32,17 @@ def create_reservation(
     current_user: User = Depends(get_current_active_user),
 ):
     """
-    RF03, RF06, RF10: Crea una nueva reserva.
+    Crea una nueva reserva.
     - Valida disponibilidad de la habitación en las fechas solicitadas.
     - Calcula automáticamente noches, subtotal, descuentos e impuestos.
-    - Envía notificación de confirmación al huésped (RF10).
+    - Envía notificación de confirmación al huésped.
     """
     room = db.query(Room).filter(Room.id == res_in.room_id, Room.is_active == True).first()
     if not room:
         raise NotFoundException("La habitación solicitada no existe o no está disponible")
         
-    if room.status == RoomStatus.maintenance:
-        raise ConflictException("La habitación se encuentra en mantenimiento y no está disponible para reservas")
+    if room.status == RoomStatus.occupied:
+        raise ConflictException("La habitación se encuentra ocupada y no está disponible para reservas")
 
     if res_in.num_guests > room.capacity:
         raise BadRequestException(f"La habitación seleccionada tiene capacidad máxima para {room.capacity} persona(s)")
@@ -51,7 +51,7 @@ def create_reservation(
     if not is_available:
         raise ConflictException("La habitación ya se encuentra reservada para las fechas seleccionadas")
 
-    # RF06: Cálculo automático de tarifas
+    # Cálculo automático de tarifas
     nights, base_total, discount_amount, tax_amount, final_total = calculate_tariffs(
         room_price=room.price_per_night,
         check_in=res_in.check_in_date,
@@ -89,7 +89,7 @@ def create_reservation(
     db.commit()
     db.refresh(reservation)
 
-    # RF10: Mock de notificación
+    # Mock de notificación
     formatted_total = f"${reservation.final_total:,.0f}" if (room.currency or "COP") == "COP" else f"${reservation.final_total:.2f}"
     send_notification(
         db=db,
@@ -109,7 +109,7 @@ def get_my_reservations(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """RF08: Obtiene el historial completo de reservas del usuario autenticado."""
+    """Obtiene el historial completo de reservas del usuario autenticado."""
     reservations = (
         db.query(Reservation)
         .filter(Reservation.user_id == current_user.id)
@@ -128,7 +128,7 @@ def list_all_reservations(
     db: Session = Depends(get_db),
     staff_or_admin: User = Depends(require_role(UserRole.admin, UserRole.staff)),
 ):
-    """RF11: Lista de todas las reservas del hotel (solo admin y staff)."""
+    """Lista de todas las reservas del hotel (solo admin y staff)."""
     query = db.query(Reservation)
     if status_filter:
         query = query.filter(Reservation.status == status_filter)
@@ -150,7 +150,7 @@ def get_reservation_by_id(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """RF11: Detalle de reserva. Huésped solo ve la suya; staff/admin pueden ver cualquiera."""
+    """Detalle de reserva. Huésped solo ve la suya; staff/admin pueden ver cualquiera."""
     reservation = db.query(Reservation).filter(Reservation.id == id).first()
     if not reservation:
         raise NotFoundException(f"Reserva con ID {id} no encontrada")
@@ -170,7 +170,7 @@ def update_reservation(
     current_user: User = Depends(get_current_active_user),
 ):
     """
-    RF03: Modificar reserva.
+    Modificar reserva.
     Permitido para el dueño de la reserva o admin si está en estado pending o confirmed.
     Recalcula tarifas si cambian las fechas.
     """
@@ -238,7 +238,7 @@ def cancel_reservation(
     current_user: User = Depends(get_current_active_user),
 ):
     """
-    RF03, RF10: Cancela una reserva.
+    Cancela una reserva.
     Permitido para el dueño o admin. No puede cancelarse si ya hizo check-in.
     """
     reservation = db.query(Reservation).filter(Reservation.id == id).first()
@@ -281,7 +281,7 @@ def check_in_guest(
     staff_or_admin: User = Depends(require_role(UserRole.admin, UserRole.staff)),
 ):
     """
-    RF05: Check-in del huésped (staff o admin).
+    Check-in del huésped (staff o admin).
     Cambia el estado de la reserva a checked_in y la habitación a occupied.
     """
     reservation = db.query(Reservation).filter(Reservation.id == id).first()
@@ -319,8 +319,8 @@ def check_out_guest(
     staff_or_admin: User = Depends(require_role(UserRole.admin, UserRole.staff)),
 ):
     """
-    RF05: Check-out del huésped (staff o admin).
-    Cambia el estado de la reserva a checked_out y la habitación a cleaning.
+    Check-out del huésped (staff o admin).
+    Cambia el estado de la reserva a checked_out y la habitación queda disponible automáticamente.
     """
     reservation = db.query(Reservation).filter(Reservation.id == id).first()
     if not reservation:
@@ -335,7 +335,7 @@ def check_out_guest(
     room = db.query(Room).filter(Room.id == reservation.room_id).first()
     reservation.status = ReservationStatus.checked_out
     reservation.checked_out_at = datetime.now(timezone.utc)
-    room.status = RoomStatus.cleaning
+    room.status = RoomStatus.available
 
     # Crear o actualizar registro en la lista de pagados (Conteo)
     existing_record = db.query(CheckoutRecord).filter(CheckoutRecord.reservation_id == reservation.id).first()
@@ -380,4 +380,4 @@ def check_out_guest(
     )
 
     data = ReservationResponse.model_validate(reservation).model_dump()
-    return success_response(data=data, message="Check-out realizado exitosamente. Habitación marcada para limpieza.")
+    return success_response(data=data, message="Check-out realizado exitosamente. La habitación ahora está disponible automáticamente.")

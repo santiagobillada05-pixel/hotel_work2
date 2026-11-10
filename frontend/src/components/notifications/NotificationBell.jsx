@@ -118,7 +118,7 @@ export default function NotificationBell() {
             <h4 className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wider">
               Notificaciones
             </h4>
-            <span className="text-[11px] text-slate-400 font-medium">RF10 Alertas</span>
+            <span className="text-[11px] text-slate-400 font-medium">Alertas</span>
           </div>
 
           <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
