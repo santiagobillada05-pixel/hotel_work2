@@ -4,6 +4,7 @@ import { roomsApi } from "../api/roomsApi";
 import { reservationsApi } from "../api/reservationsApi";
 import { useAuthStore } from "../store/authStore";
 import RoomCarousel from "../components/rooms/RoomCarousel";
+import BookingExtrasPicker from "../components/reservations/BookingExtrasPicker";
 import { 
   ArrowLeft, 
   Users, 
@@ -48,6 +49,7 @@ export default function RoomDetailPage() {
   const [checkOut, setCheckOut] = useState(defaultCheckOut);
   const [numGuests, setNumGuests] = useState(1);
   const [specialRequests, setSpecialRequests] = useState("");
+  const [selectedExtras, setSelectedExtras] = useState([]);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
 
@@ -66,6 +68,13 @@ export default function RoomDetailPage() {
     fetchRoom();
   }, [id]);
 
+  const extrasTotal = useMemo(() => {
+    return selectedExtras.reduce(
+      (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+      0
+    );
+  }, [selectedExtras]);
+
   const calculations = useMemo(() => {
     if (!room || !checkIn || !checkOut) return null;
     const diff = new Date(checkOut) - new Date(checkIn);
@@ -78,21 +87,25 @@ export default function RoomDetailPage() {
 
     const base = nights * price;
     const tax = Math.round(base * 0.19);
-    const total = base + tax;
+    const roomTotal = base + tax;
+    const grandTotal = roomTotal + extrasTotal;
+
     return {
       nights,
       currency: 'COP',
       price: price.toLocaleString('es-CO'),
       base: base.toLocaleString('es-CO'),
       tax: tax.toLocaleString('es-CO'),
-      total: total.toLocaleString('es-CO'),
+      roomTotal: roomTotal.toLocaleString('es-CO'),
+      grandTotal: grandTotal.toLocaleString('es-CO'),
+      rawGrandTotal: grandTotal,
     };
-  }, [room, checkIn, checkOut]);
+  }, [room, checkIn, checkOut, extrasTotal]);
 
   const handleBooking = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
-      navigate("/login");
+      navigate('/login', { state: { from: `/rooms/${id}` } });
       return;
     }
 
@@ -105,7 +118,7 @@ export default function RoomDetailPage() {
         check_out_date: checkOut,
         num_guests: Number(numGuests),
         special_requests: specialRequests || null,
-        discount_rate: 0.0,
+        selected_extras: selectedExtras,
       });
       setBookingSuccess(true);
     } catch (err) {
@@ -408,6 +421,14 @@ export default function RoomDetailPage() {
                     </div>
                   </div>
 
+                  {/* Extras Picker: Selección de Servicios Adicionales */}
+                  <div className="pt-2 border-t border-slate-200 dark:border-slate-700">
+                    <BookingExtrasPicker
+                      selectedExtras={selectedExtras}
+                      onChange={setSelectedExtras}
+                    />
+                  </div>
+
                   {calculations && (
                     <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 border border-slate-200 dark:border-slate-700 space-y-1.5 text-xs">
                       <div className="flex justify-between text-slate-600 dark:text-slate-300">
@@ -420,10 +441,16 @@ export default function RoomDetailPage() {
                         <span>IVA (19%)</span>
                         <span className="font-semibold text-slate-900 dark:text-slate-50">${calculations.tax} COP</span>
                       </div>
+                      {extrasTotal > 0 && (
+                        <div className="flex justify-between text-brand-700 dark:text-brand-400 font-bold">
+                          <span>Servicios adicionales ({selectedExtras.length})</span>
+                          <span>+${extrasTotal.toLocaleString('es-CO')} COP</span>
+                        </div>
+                      )}
                       <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between font-black text-slate-900 dark:text-slate-50 text-sm">
-                        <span>Total</span>
+                        <span>Total a pagar en recepción</span>
                         <span className="text-brand-700 font-extrabold text-base">
-                          ${calculations.total} COP
+                          ${calculations.grandTotal} COP
                         </span>
                       </div>
                     </div>

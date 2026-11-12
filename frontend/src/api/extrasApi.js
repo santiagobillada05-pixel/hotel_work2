@@ -8,9 +8,20 @@ export const extrasApi = {
         .from('extra_services')
         .select('*')
         .eq('is_active', true)
-        .order('name');
+        .order('price');
       if (error) throw error;
-      return { success: true, data: data || [] };
+      
+      // Deduplicate by name so duplicate seeds don't show twice
+      const seen = new Set();
+      const unique = [];
+      for (const item of (data || [])) {
+        const key = item.name.toLowerCase().trim();
+        if (!seen.has(key)) {
+          seen.add(key);
+          unique.push(item);
+        }
+      }
+      return { success: true, data: unique };
     } catch (err) {
       return api.get('/extras/');
     }

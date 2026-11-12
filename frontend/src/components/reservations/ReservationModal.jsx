@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { reservationsApi } from '../../api/reservationsApi';
-import ExtrasSelector from './ExtrasSelector';
+import BookingExtrasPicker from './BookingExtrasPicker';
 import { 
   X, 
   Calendar, 
@@ -15,7 +15,8 @@ import {
   Clock,
   Info,
   ShoppingBag,
-  CreditCard
+  CreditCard,
+  Sparkles
 } from 'lucide-react';
 
 export default function ReservationModal({ room, initialCheckIn, initialCheckOut, onClose, onSuccess }) {
@@ -25,7 +26,6 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
   const today = new Date().toISOString().split('T')[0];
   const defaultCheckIn = initialCheckIn || today;
   
-  // Calculate default check-out as tomorrow
   const tomorrowDate = new Date();
   tomorrowDate.setDate(tomorrowDate.getDate() + 1);
   const defaultCheckOut = initialCheckOut || tomorrowDate.toISOString().split('T')[0];
@@ -34,11 +34,18 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
   const [checkOutDate, setCheckOutDate] = useState(defaultCheckOut);
   const [numGuests, setNumGuests] = useState(1);
   const [specialRequests, setSpecialRequests] = useState('');
-  const [currency, setCurrency] = useState('COP');
+  const [selectedExtras, setSelectedExtras] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successData, setSuccessData] = useState(null);
-  const [extrasTotal, setExtrasTotal] = useState(0);
+
+  // Extras total
+  const extrasTotal = useMemo(() => {
+    return selectedExtras.reduce(
+      (sum, item) => sum + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+      0
+    );
+  }, [selectedExtras]);
 
   // Live tariff calculation
   const calculations = useMemo(() => {
@@ -54,7 +61,7 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
     const price = rawPrice > 0 && rawPrice < 2000 ? rawPrice * 4000 : rawPrice;
     const baseTotal = nights * price;
     const taxAmount = Math.round(baseTotal * 0.19); // 19% IVA
-    const finalTotal = baseTotal + taxAmount;
+    const finalRoomTotal = baseTotal + taxAmount;
     
     const formatAmt = (amt) => new Intl.NumberFormat('es-CO', {
       minimumFractionDigits: 0,
@@ -63,19 +70,24 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
 
     return {
       nights,
+      price,
       baseTotal: formatAmt(baseTotal),
+      rawBaseTotal: baseTotal,
       taxAmount: formatAmt(taxAmount),
-      finalTotal: formatAmt(finalTotal),
-      symbol: '$',
+      rawTaxAmount: taxAmount,
+      finalTotal: formatAmt(finalRoomTotal),
+      rawFinalTotal: finalRoomTotal,
       currency: 'COP',
-      rawFinalTotal: finalTotal
     };
   }, [checkInDate, checkOutDate, room.price_per_night]);
+
+  const grandTotal = (calculations?.rawFinalTotal || 0) + extrasTotal;
+  const fmtAmt = (amt) => new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amt);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!isAuthenticated) {
-      navigate('/login');
+      navigate('/login', { state: { from: window.location.pathname } });
       return;
     }
 
@@ -94,7 +106,7 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
         check_out_date: checkOutDate,
         num_guests: Number(numGuests),
         special_requests: specialRequests || null,
-        discount_rate: 0.0,
+        selected_extras: selectedExtras,
       });
 
       setSuccessData(response.data || response);
@@ -110,9 +122,6 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
     }
   };
 
-  const grandTotal = (calculations?.rawFinalTotal || 0) + extrasTotal;
-  const fmtAmt = (amt) => new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amt);
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
       <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-700/50 flex flex-col max-h-[90vh]">
@@ -120,7 +129,7 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
         <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 shrink-0">
           <div>
             <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50">
-              {successData ? 'Reserva Registrada' : 'Confirmar Reserva'}
+              {successData ? 'Reserva Registrada con Éxito' : 'Confirmar Reserva'}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               Habitación {room.room_number} • ${Number(room.price_per_night > 0 && room.price_per_night < 2000 ? room.price_per_night * 4000 : room.price_per_night).toLocaleString('es-CO')} COP / noche
@@ -135,38 +144,21 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
         </div>
 
         {/* Content */}
-        <div className="p-6 overflow-y-auto">
+        <div className="p-6 overflow-y-auto space-y-5">
           {successData ? (
             <div className="space-y-5">
-              {/* Pending Status Badge */}
-              <div className="text-center py-4">
-                <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Clock className="w-10 h-10" />
+              {/* Status Badge */}
+              <div className="text-center py-2">
+                <div className="w-14 h-14 bg-amber-100 dark:bg-amber-900/40 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Clock className="w-8 h-8" />
                 </div>
                 <h4 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-1">¡Reserva Creada!</h4>
-                <span className="inline-block px-3 py-1 bg-amber-100 text-amber-700 border border-amber-300 rounded-full text-xs font-extrabold uppercase tracking-wider mb-3">
+                <span className="inline-block px-3 py-1 bg-amber-100 text-amber-700 border border-amber-300 rounded-full text-xs font-extrabold uppercase tracking-wider mb-2">
                   Estado: Pendiente
                 </span>
-                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
-                  Tu reserva <span className="font-bold text-slate-900 dark:text-slate-50">#{successData.id}</span> fue registrada. 
-                  Está en estado <strong>pendiente</strong> hasta que la confirmes.
+                <p className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed max-w-sm mx-auto">
+                  Tu reserva <span className="font-bold text-slate-900 dark:text-slate-50">#{successData.id}</span> quedó registrada correctamente en el sistema.
                 </p>
-              </div>
-
-              {/* Confirmation deadline info */}
-              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl flex items-start gap-3">
-                <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-1">
-                  <p className="font-bold text-amber-950 dark:text-amber-100">
-                    Importante: Confirmación Requerida
-                  </p>
-                  <p>
-                    Debes confirmar que asistirás <strong>1 día antes de tu fecha de entrada / llegada</strong> (o a más tardar <strong>4 horas antes</strong> de la hora prevista) desde la pestaña <strong>"Mis Reservas"</strong>.
-                  </p>
-                  <p className="text-[11px] font-semibold text-rose-700 dark:text-rose-400">
-                    Si no confirmas a tiempo, la reserva se cancelará automáticamente.
-                  </p>
-                </div>
               </div>
 
               {/* Reservation details */}
@@ -176,57 +168,70 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                   <span className="font-bold text-slate-800 dark:text-slate-100">#{successData.id}</span>
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>Fechas:</span>
+                  <span>Habitación:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-100">Hab. {room.room_number}</span>
+                </div>
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                  <span>Fechas de estadía:</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-100">{successData.check_in_date} al {successData.check_out_date}</span>
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>Subtotal habitación:</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-100">
-                    {calculations ? `${calculations.symbol}${calculations.finalTotal} ${calculations.currency}` : `$${Number(successData.final_total).toLocaleString('es-CO')} COP`}
-                  </span>
+                  <span>Huéspedes:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">{numGuests} {numGuests === 1 ? 'huésped' : 'huéspedes'}</span>
                 </div>
-                {extrasTotal > 0 && (
-                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                    <span>Servicios adicionales:</span>
-                    <span className="font-semibold text-slate-800 dark:text-slate-100">${fmtAmt(extrasTotal)} COP</span>
+
+                {/* Selected Extras in summary */}
+                {selectedExtras.length > 0 && (
+                  <div className="border-t border-slate-200 dark:border-slate-700 pt-2 space-y-1">
+                    <span className="font-bold text-slate-700 dark:text-slate-200 block mb-1">Servicios adicionales incluidos:</span>
+                    {selectedExtras.map((ex, i) => (
+                      <div key={i} className="flex justify-between text-slate-500 dark:text-slate-400 pl-2">
+                        <span>• {ex.name}</span>
+                        <span>+${fmtAmt(ex.price)} COP</span>
+                      </div>
+                    ))}
                   </div>
                 )}
+
                 <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between font-extrabold text-slate-900 dark:text-slate-50 text-sm">
-                  <span>Total a pagar:</span>
-                  <span className="text-brand-700">${fmtAmt(grandTotal)} COP</span>
+                  <span>Total a pagar en recepción:</span>
+                  <span className="text-brand-700 dark:text-brand-400 text-base font-black">${fmtAmt(successData.final_total || grandTotal)} COP</span>
                 </div>
               </div>
 
-              {/* Extras Selector */}
-              <div className="border-t border-slate-100 dark:border-slate-700/50 pt-4">
-                <div className="flex items-center gap-2 text-sm font-extrabold text-slate-700 dark:text-slate-200 mb-3">
-                  <ShoppingBag className="w-4 h-4 text-brand-600" />
-                  ¿Deseas agregar servicios a tu estadía?
+              {/* Confirmation deadline info */}
+              <div className="p-3.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl flex items-start gap-3">
+                <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-1">
+                  <p className="font-bold text-amber-950 dark:text-amber-100">
+                    Importante: Confirmación Requerida
+                  </p>
+                  <p>
+                    Debes confirmar tu asistencia <strong>1 día antes de tu fecha de entrada</strong> (o a más tardar <strong>4 horas antes</strong>) desde la pestaña <strong>"Mis Reservas"</strong>.
+                  </p>
+                  <p className="text-[11px] font-semibold text-rose-700 dark:text-rose-400">
+                    * Si no confirmas a tiempo, la reserva se cancelará automáticamente.
+                  </p>
                 </div>
-                <ExtrasSelector
-                  reservationId={successData.id}
-                  roomTotal={calculations?.rawFinalTotal || Number(successData.final_total)}
-                  onTotalChange={setExtrasTotal}
-                />
               </div>
 
               {/* Payment note */}
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed text-center space-y-1">
+              <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed text-center space-y-1">
                 <p className="font-extrabold text-sm flex items-center justify-center gap-1.5 text-emerald-800 dark:text-emerald-300">
-                  <span>💳 Pago Únicamente en el Hotel</span>
+                  <CreditCard className="w-4 h-4" /> Pago Directo en el Hotel
                 </p>
                 <p>
-                  No se realiza ningún cobro en la página web. El valor total se cancela directamente en la recepción del hotel <strong>al momento del registro de entrada (llegada)</strong>.
+                  El valor total se cancela directamente en la recepción del hotel <strong>al momento del registro de entrada</strong>.
                 </p>
                 <p className="font-semibold text-emerald-700 dark:text-emerald-400 text-[11px]">
-                  Medios de pago aceptados: Transferencia bancaria, Tarjeta de crédito/débito o Efectivo.
+                  Medios de pago aceptados: Transferencia bancaria, Tarjetas de crédito/débito o Efectivo.
                 </p>
               </div>
 
               <div className="flex gap-3">
                 <button
                   onClick={() => navigate('/my-reservations')}
-                  className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm"
+                  className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm shadow-md"
                 >
                   Ver Mis Reservas
                 </button>
@@ -239,7 +244,7 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
               </div>
             </div>
           ) : (
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
                 <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs flex items-center gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0" />
@@ -253,36 +258,32 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                     Fecha de Entrada
                   </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      min={today}
-                      value={checkInDate}
-                      onChange={(e) => setCheckInDate(e.target.value)}
-                      required
-                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
-                    />
-                  </div>
+                  <input
+                    type="date"
+                    min={today}
+                    value={checkInDate}
+                    onChange={(e) => setCheckInDate(e.target.value)}
+                    required
+                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+                  />
                 </div>
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                     Fecha de Salida
                   </label>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      min={checkInDate || today}
-                      value={checkOutDate}
-                      onChange={(e) => setCheckOutDate(e.target.value)}
-                      required
-                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
-                    />
-                  </div>
+                  <input
+                    type="date"
+                    min={checkInDate || today}
+                    value={checkOutDate}
+                    onChange={(e) => setCheckOutDate(e.target.value)}
+                    required
+                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
+                  />
                 </div>
               </div>
 
-              {/* Guests and Currency Selector */}
+              {/* Guests and Currency */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
@@ -308,8 +309,8 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5">
                     Moneda de Pago
                   </label>
-                  <div className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-800 dark:text-slate-100 font-bold flex items-center justify-between">
-                    <span>COP (Peso Colombiano)</span>
+                  <div className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2 text-sm text-slate-800 dark:text-slate-100 font-bold flex items-center justify-between">
+                    <span>COP (Pesos)</span>
                     <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">Oficial</span>
                   </div>
                 </div>
@@ -324,8 +325,16 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                   rows={2}
                   value={specialRequests}
                   onChange={(e) => setSpecialRequests(e.target.value)}
-                  placeholder="Ej: Llegada tardía, piso alto, cuna para bebé..."
+                  placeholder="Ej: Llegada tardía, piso alto, cuna..."
                   className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium placeholder:text-slate-400"
+                />
+              </div>
+
+              {/* EXTRAS PICKER: SELECCIÓN DE SERVICIOS ADICIONALES AL MOMENTO DE RESERVAR */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-700/50">
+                <BookingExtrasPicker
+                  selectedExtras={selectedExtras}
+                  onChange={setSelectedExtras}
                 />
               </div>
 
@@ -346,9 +355,15 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                     <span>Impuestos (IVA 19%)</span>
                     <span className="font-semibold text-slate-800 dark:text-slate-100">${calculations.taxAmount} COP</span>
                   </div>
+                  {extrasTotal > 0 && (
+                    <div className="flex justify-between text-xs text-brand-700 dark:text-brand-400 font-bold">
+                      <span>Servicios adicionales ({selectedExtras.length})</span>
+                      <span>+${fmtAmt(extrasTotal)} COP</span>
+                    </div>
+                  )}
                   <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between items-center text-sm font-extrabold text-slate-900 dark:text-slate-50">
-                    <span>Total a Pagar</span>
-                    <span className="text-base text-brand-700">${calculations.finalTotal} COP</span>
+                    <span>Total a Pagar en Recepción</span>
+                    <span className="text-base text-brand-700 dark:text-brand-400 font-black">${fmtAmt(grandTotal)} COP</span>
                   </div>
                 </div>
               ) : (
@@ -357,38 +372,15 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                 </p>
               )}
 
-              {/* Important confirmation policy notice */}
-              <div className="p-3.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl flex items-start gap-3">
-                <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-1">
-                  <p className="font-bold text-amber-950 dark:text-amber-100 flex items-center gap-1.5">
-                    <span>⚠️ Política de Confirmación</span>
-                  </p>
-                  <p>
-                    La reserva quedará en estado <strong>Pendiente</strong>:
-                  </p>
-                  <ul className="list-disc list-inside space-y-0.5 pl-1 opacity-95">
-                    <li>Debes confirmar tu asistencia <strong>1 día antes de tu fecha de entrada</strong> en <em>"Mis Reservas"</em>.</li>
-                    <li>O como plazo máximo hasta <strong>4 horas antes</strong> de la hora de llegada prevista.</li>
-                  </ul>
-                  <p className="text-[11px] font-semibold text-rose-700 dark:text-rose-400 pt-0.5">
-                    * Si no confirmas a tiempo, el sistema cancelará la reserva automáticamente.
-                  </p>
-                </div>
-              </div>
-
               {/* Important payment notice at reservation time */}
-              <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl flex items-start gap-3">
-                <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
-                <div className="text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed space-y-1">
-                  <p className="font-bold text-emerald-950 dark:text-emerald-100 flex items-center gap-1.5">
-                    <span>💳 Pago Únicamente en el Hotel</span>
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl flex items-start gap-2.5">
+                <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div className="text-[11px] text-emerald-900 dark:text-emerald-200 leading-relaxed">
+                  <p className="font-bold text-emerald-950 dark:text-emerald-100">
+                    Pago Únicamente en el Hotel
                   </p>
                   <p>
-                    <strong>No pagas nada ahora en la web.</strong> El valor total de tu habitación y servicios seleccionados se cancela directamente en la recepción del hotel <strong>al momento de hacer tu registro de entrada (llegada)</strong>.
-                  </p>
-                  <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
-                    Aceptamos: Transferencia bancaria, Tarjetas de crédito/débito o Efectivo.
+                    No se realiza ningún cargo ahora. Cancelas el valor total en recepción al momento del check-in (transferencia, tarjeta o efectivo).
                   </p>
                 </div>
               </div>
@@ -405,7 +397,10 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                     Procesando Reserva...
                   </>
                 ) : (
-                  'Confirmar y Reservar Ahora'
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Confirmar y Reservar Ahora (${fmtAmt(grandTotal)} COP)
+                  </>
                 )}
               </button>
             </form>
