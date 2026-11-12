@@ -1,9 +1,11 @@
 """Esquemas Pydantic para reservas."""
+from __future__ import annotations
 
 from pydantic import BaseModel, Field, model_validator
 from typing import Optional
 from datetime import datetime, date
 from enum import Enum
+from app.schemas.extra_service import ReservationExtraResponse
 
 
 class ReservationStatus(str, Enum):
