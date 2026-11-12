@@ -140,11 +140,17 @@ export default function RoomDetailPage() {
 
   const parseAmenities = (amenities) => {
     if (!amenities) return [];
-    try {
-      return JSON.parse(amenities);
-    } catch {
-      return amenities.split(",").map((a) => a.trim());
+    if (Array.isArray(amenities)) return amenities;
+    if (typeof amenities === 'string') {
+      try {
+        const parsed = JSON.parse(amenities);
+        if (Array.isArray(parsed)) return parsed;
+        return [parsed];
+      } catch {
+        return amenities.split(",").map((a) => a.trim()).filter(Boolean);
+      }
     }
+    return [];
   };
 
   const amenitiesList = parseAmenities(room.amenities);

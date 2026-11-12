@@ -75,7 +75,7 @@ export default function ManageRoomsPage() {
       currency: room.currency || "COP",
       capacity: room.capacity,
       description: room.description || "",
-      amenities: room.amenities || "[]",
+      amenities: typeof room.amenities === 'string' ? room.amenities : JSON.stringify(room.amenities || []),
       floor: room.floor || "",
       image_urls: imgs,
     });

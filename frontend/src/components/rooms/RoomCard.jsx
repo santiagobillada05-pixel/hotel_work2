@@ -8,11 +8,17 @@ export default function RoomCard({ room, onSelect }) {
 
   const parseAmenities = (amenities) => {
     if (!amenities) return [];
-    try {
-      return JSON.parse(amenities);
-    } catch {
-      return amenities.split(",").map((a) => a.trim());
+    if (Array.isArray(amenities)) return amenities;
+    if (typeof amenities === 'string') {
+      try {
+        const parsed = JSON.parse(amenities);
+        if (Array.isArray(parsed)) return parsed;
+        return [parsed];
+      } catch {
+        return amenities.split(",").map((a) => a.trim()).filter(Boolean);
+      }
     }
+    return [];
   };
 
   const getRoomTypeLabel = (type) => {
@@ -26,6 +32,7 @@ export default function RoomCard({ room, onSelect }) {
   };
 
   const amenitiesList = parseAmenities(room.amenities);
+  const isBookable = room.is_room_bookable !== undefined ? Boolean(room.is_room_bookable) : (room.status === 'available');
 
   // Resolve images: prefer image_urls array, fallback to [image_url]
   const images =
@@ -65,7 +72,7 @@ export default function RoomCard({ room, onSelect }) {
         )}
 
         {/* Badge Ocupada */}
-        {!room.is_room_bookable && (
+        {!isBookable && (
           <div className="absolute inset-x-0 bottom-0 bg-blue-600/90 backdrop-blur-md text-white text-center py-2.5 text-xs font-bold pointer-events-none z-20">
             Ocupada
           </div>
@@ -120,7 +127,7 @@ export default function RoomCard({ room, onSelect }) {
             </span>
           </div>
 
-          {room.is_room_bookable ? (
+          {isBookable ? (
             <button
               onClick={(e) => { e.stopPropagation(); onSelect(room); }}
               className="bg-brand-600 hover:bg-brand-700 active:bg-brand-800 text-white font-semibold text-sm px-4 py-2.5 rounded-xl shadow-sm hover:shadow transition-all flex items-center gap-1.5"

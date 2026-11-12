@@ -1,6 +1,47 @@
 import { supabase } from '../lib/supabaseClient';
 import api from './client';
 
+export const normalizeRoom = (r) => {
+  if (!r) return r;
+  let amenities = [];
+  if (Array.isArray(r.amenities)) {
+    amenities = r.amenities;
+  } else if (typeof r.amenities === 'string') {
+    try {
+      const p = JSON.parse(r.amenities);
+      amenities = Array.isArray(p) ? p : [p];
+    } catch {
+      amenities = r.amenities.split(',').map((s) => s.trim()).filter(Boolean);
+    }
+  }
+
+  let imageUrls = [];
+  if (Array.isArray(r.image_urls)) {
+    imageUrls = r.image_urls;
+  } else if (typeof r.image_urls === 'string') {
+    try {
+      const p = JSON.parse(r.image_urls);
+      imageUrls = Array.isArray(p) ? p : [p];
+    } catch {
+      imageUrls = [r.image_urls];
+    }
+  } else if (r.image_url) {
+    imageUrls = [r.image_url];
+  }
+
+  const isBookable = r.is_room_bookable !== undefined
+    ? Boolean(r.is_room_bookable)
+    : (r.status === 'available' && (r.is_active === undefined || Boolean(r.is_active)));
+
+  return {
+    ...r,
+    amenities,
+    image_urls: imageUrls,
+    image_url: imageUrls[0] || r.image_url || '',
+    is_room_bookable: isBookable,
+  };
+};
+
 export const roomsApi = {
   getAvailableRooms: async (params = {}) => {
     try {
@@ -21,16 +62,21 @@ export const roomsApi = {
           .gt('check_out_date', params.check_in);
 
         const bookedIds = new Set((booked || []).map((r) => r.room_id));
+        const filtered = (rooms || []).filter((r) => !bookedIds.has(r.id));
         return {
           success: true,
-          data: (rooms || []).filter((r) => !bookedIds.has(r.id)),
+          data: filtered.map(normalizeRoom),
         };
       }
 
-      return { success: true, data: rooms || [] };
+      return { success: true, data: (rooms || []).map(normalizeRoom) };
     } catch (err) {
       console.warn('Supabase rooms fallback to API:', err);
-      return api.get('/rooms/available', { params });
+      const res = await api.get('/rooms/available', { params });
+      return {
+        ...res,
+        data: Array.isArray(res?.data) ? res.data.map(normalizeRoom) : res?.data,
+      };
     }
   },
 
@@ -42,9 +88,13 @@ export const roomsApi = {
       }
       const { data, error } = await query.order('room_number');
       if (error) throw error;
-      return { success: true, data: data || [] };
+      return { success: true, data: (data || []).map(normalizeRoom) };
     } catch (err) {
-      return api.get('/rooms/', { params });
+      const res = await api.get('/rooms/', { params });
+      return {
+        ...res,
+        data: Array.isArray(res?.data) ? res.data.map(normalizeRoom) : res?.data,
+      };
     }
   },
 
@@ -52,9 +102,13 @@ export const roomsApi = {
     try {
       const { data, error } = await supabase.from('rooms').select('*').eq('id', id).single();
       if (error) throw error;
-      return { success: true, data };
+      return { success: true, data: normalizeRoom(data) };
     } catch (err) {
-      return api.get(`/rooms/${id}`);
+      const res = await api.get(`/rooms/${id}`);
+      return {
+        ...res,
+        data: normalizeRoom(res?.data),
+      };
     }
   },
 

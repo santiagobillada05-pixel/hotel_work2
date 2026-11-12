@@ -235,9 +235,6 @@ export default function RoomsPage() {
           </div>
         )}
 
-        {/* Welcome Modal */}
-        {showWelcome && <WelcomeModal onClose={handleCloseWelcome} />}
-
         {/* Reservation Modal */}
         {selectedRoom && (
           <ReservationModal
