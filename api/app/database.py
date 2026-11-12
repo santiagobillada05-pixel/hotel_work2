@@ -47,7 +47,14 @@ else:
     engine_kwargs["pool_pre_ping"] = True
     engine_kwargs["pool_recycle"] = 300
 
-engine = create_engine(database_url, **engine_kwargs)
+try:
+    engine = create_engine(database_url, **engine_kwargs)
+except Exception:
+    if "postgresql" in database_url and "+pg8000" not in database_url:
+        fallback_url = database_url.replace("postgresql://", "postgresql+pg8000://", 1)
+        engine = create_engine(fallback_url, **engine_kwargs)
+    else:
+        raise
 
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
