@@ -28,6 +28,9 @@ import asyncio
 
 
 def _safe_init_db():
+    if os.environ.get("VERCEL"):
+        # On Vercel serverless, Supabase tables are already initialized
+        return
     try:
         print(f"[{settings.APP_NAME}] Initializing database tables...")
         init_db()
