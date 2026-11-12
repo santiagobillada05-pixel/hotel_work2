@@ -65,7 +65,7 @@ class ReservationResponse(BaseModel):
     updated_at: datetime
     is_paid: bool = False
     payments: list["PaymentResponse"] = []
-    extras: list = []
+    extras: list[ReservationExtraResponse] = []
     extras_total: float = 0.0
     grand_total: float = 0.0
     confirmation_deadline: Optional[str] = None
@@ -87,5 +87,6 @@ class ReservationResponse(BaseModel):
         return self
 
 
+from app.schemas.extra_service import ReservationExtraResponse
 from app.schemas.payment import PaymentResponse
 ReservationResponse.model_rebuild()

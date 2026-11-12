@@ -42,7 +42,8 @@ export default function CheckInOutPage() {
     setError(null);
     try {
       const res = await reservationsApi.getAllReservations({ per_page: 50 });
-      setReservations(res.data || []);
+      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      setReservations(list);
     } catch (err) {
       setError(err.message || 'Error al cargar reservas');
     } finally {

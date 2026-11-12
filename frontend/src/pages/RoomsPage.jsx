@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { roomsApi } from '../api/roomsApi';
 import RoomCard from '../components/rooms/RoomCard';
@@ -21,24 +21,20 @@ export default function RoomsPage() {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
-  const [showWelcome, setShowWelcome] = useState(() => {
-    return !localStorage.getItem('hotelwork_welcome_seen');
-  });
+  const location = useLocation();
+
+  // El abre bocas se muestra siempre al abrir la página, iniciar sesión o entrar a Habitaciones
+  const [showWelcome, setShowWelcome] = useState(true);
+
+  useEffect(() => {
+    setShowWelcome(true);
+  }, [location.key]);
 
   const handleCloseWelcome = () => {
-    localStorage.setItem('hotelwork_welcome_seen', 'true');
     setShowWelcome(false);
   };
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (user?.role === 'admin') {
-        navigate('/admin/dashboard', { replace: true });
-      } else if (user?.role === 'staff') {
-        navigate('/check-in-out', { replace: true });
-      }
-    }
-  }, [isAuthenticated, user, navigate]);
+  // Removido redirect agresivo para que admin y staff también puedan ver el catálogo y el abre bocas en cualquier momento.
 
   const today = new Date().toISOString().split('T')[0];
   const tomorrow = new Date();

@@ -30,9 +30,11 @@ export default function MyReservationsPage() {
 
   const fetchMyReservations = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await reservationsApi.getMyReservations();
-      setReservations(res.data || res || []);
+      const list = Array.isArray(res?.data) ? res.data : Array.isArray(res) ? res : [];
+      setReservations(list);
     } catch (err) {
       setError(err.message || 'Error al obtener tu historial de reservas');
     } finally {

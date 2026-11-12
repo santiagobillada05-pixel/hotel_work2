@@ -94,11 +94,13 @@ export default function Navbar() {
   ];
 
   const staffMasItems = [
+    { to: '/', icon: Hotel, label: 'Ver Catálogo / Habitaciones' },
     { to: '/manual', icon: BookOpen, label: 'Manual' },
     { to: '/terminos', icon: FileText, label: 'Términos' },
   ];
 
   const adminMasItems = [
+    { to: '/', icon: Hotel, label: 'Ver Catálogo / Habitaciones' },
     { to: '/admin/empleados/nuevo', icon: UserPlus, label: 'Registrar Empleado' },
     { to: '/manual', icon: BookOpen, label: 'Manual' },
     { to: '/terminos', icon: FileText, label: 'Términos' },
@@ -295,6 +297,7 @@ export default function Navbar() {
             )}
             {isAuthenticated && user?.role === 'staff' && (
               <>
+                <Link to="/" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Ver Catálogo / Habitaciones</Link>
                 <Link to="/check-in-out" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Recepción & Entrada</Link>
                 <Link to="/pagados" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Lista Pagados / Conteo</Link>
                 <Link to="/recaudacion" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Recaudación</Link>
@@ -304,6 +307,7 @@ export default function Navbar() {
             )}
             {isAuthenticated && user?.role === 'admin' && (
               <>
+                <Link to="/" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Ver Catálogo / Habitaciones</Link>
                 <Link to="/admin/dashboard" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Dashboard</Link>
                 <Link to="/admin/rooms" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Habitaciones</Link>
                 <Link to="/admin/users" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Usuarios</Link>
