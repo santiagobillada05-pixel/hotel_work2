@@ -22,14 +22,16 @@ if backend_dir not in sys.path:
 if not os.environ.get("DATABASE_URL"):
     os.environ["DATABASE_URL"] = "postgresql://postgres.cgsaxlgifvlozglwnfsz:Luissan.ti0820@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require"
 
-# Import app with safe error trapping for Vercel serverless functions
+_import_error = None
+
+# Import real app with safe error trapping for Vercel serverless functions
 try:
     from app.main import app as real_app
     app = real_app
 except Exception as exc:
+    _import_error = traceback.format_exc()
     import logging
     logging.exception("Failed to initialize HotelWork FastAPI app on Vercel")
-    err_tb = traceback.format_exc()
     
     from fastapi import FastAPI
     from fastapi.responses import JSONResponse
@@ -43,23 +45,32 @@ except Exception as exc:
         allow_methods=["*"],
         allow_headers=["*"],
     )
-    
-    @app.api_route("/{path_name:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
-    async def fallback_handler(path_name: str):
-        return JSONResponse(
-            status_code=500,
-            headers={
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "*",
-                "Access-Control-Allow-Headers": "*",
-            },
-            content={
-                "success": False,
-                "error": "Serverless Startup Error",
-                "detail": str(exc),
-                "traceback": err_tb,
-            }
-        )
+
+# Direct debug endpoint
+@app.get("/api/debug")
+@app.get("/debug")
+def debug_endpoint():
+    db_status = "untested"
+    db_error = None
+    rooms_count = -1
+    try:
+        from app.database import engine
+        from sqlalchemy import text
+        with engine.connect() as conn:
+            rooms_count = conn.execute(text("SELECT count(*) FROM rooms")).scalar()
+            db_status = "connected"
+    except Exception as e:
+        db_status = "failed"
+        db_error = traceback.format_exc()
+
+    return {
+        "status": "ok" if not _import_error and db_status == "connected" else "error",
+        "import_error": _import_error,
+        "database_status": db_status,
+        "database_error": db_error,
+        "rooms_count": rooms_count,
+        "python_version": sys.version,
+    }
 
 # Final aliases for Vercel Python serverless runtime
 handler = app
