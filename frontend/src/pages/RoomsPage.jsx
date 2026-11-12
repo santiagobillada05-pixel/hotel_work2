@@ -4,6 +4,7 @@ import { useAuthStore } from '../store/authStore';
 import { roomsApi } from '../api/roomsApi';
 import RoomCard from '../components/rooms/RoomCard';
 import ReservationModal from '../components/reservations/ReservationModal';
+import WelcomeModal from '../components/WelcomeModal';
 import { 
   Search, 
   Calendar, 
@@ -19,6 +20,15 @@ import {
 export default function RoomsPage() {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
+
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return !localStorage.getItem('hotelwork_welcome_seen');
+  });
+
+  const handleCloseWelcome = () => {
+    localStorage.setItem('hotelwork_welcome_seen', 'true');
+    setShowWelcome(false);
+  };
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -82,6 +92,8 @@ export default function RoomsPage() {
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-900/50 py-8">
+      {/* Welcome Modal - obligatorio cerrar con X */}
+      {showWelcome && <WelcomeModal onClose={handleCloseWelcome} />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Hero Section */}
         <div className="text-center max-w-3xl mx-auto mb-8">
@@ -229,6 +241,9 @@ export default function RoomsPage() {
             </div>
           </div>
         )}
+
+        {/* Welcome Modal */}
+        {showWelcome && <WelcomeModal onClose={handleCloseWelcome} />}
 
         {/* Reservation Modal */}
         {selectedRoom && (

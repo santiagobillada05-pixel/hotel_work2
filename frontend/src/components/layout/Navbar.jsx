@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import NotificationBell from '../notifications/NotificationBell';
@@ -15,12 +15,62 @@ import {
   BedDouble,
   Users,
   DollarSign,
-  BookOpen
+  BookOpen,
+  ChevronDown,
+  Menu,
+  X,
+  FileText,
+  MoreHorizontal
 } from 'lucide-react';
+
+function DropdownMenu({ label, icon: Icon, items }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
+      >
+        {Icon && <Icon className="w-4 h-4" />}
+        {label}
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-200 dark:border-slate-700 py-1.5 z-50 animate-scaleIn origin-top-right">
+          {items.map((item, i) => (
+            <Link
+              key={i}
+              to={item.to}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 font-medium transition-colors"
+            >
+              {item.icon && <item.icon className="w-4 h-4" />}
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Navbar() {
   const { user, isAuthenticated, logout } = useAuthStore();
   const navigate = useNavigate();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -37,6 +87,22 @@ export default function Navbar() {
         return <span className="bg-blue-100 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full">Huésped</span>;
     }
   };
+
+  const masDropdownItems = [
+    { to: '/manual', icon: BookOpen, label: 'Manual de usuario' },
+    { to: '/terminos', icon: FileText, label: 'Términos y condiciones' },
+  ];
+
+  const staffMasItems = [
+    { to: '/manual', icon: BookOpen, label: 'Manual' },
+    { to: '/terminos', icon: FileText, label: 'Términos' },
+  ];
+
+  const adminMasItems = [
+    { to: '/admin/empleados/nuevo', icon: UserPlus, label: 'Registrar Empleado' },
+    { to: '/manual', icon: BookOpen, label: 'Manual' },
+    { to: '/terminos', icon: FileText, label: 'Términos' },
+  ];
 
   return (
     <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 shadow-sm transition-colors duration-200">
@@ -55,15 +121,16 @@ export default function Navbar() {
             </span>
           </Link>
 
-          {/* Navigation Links */}
-          <div className="hidden md:flex items-center gap-6">
+          {/* Desktop Navigation Links */}
+          <div className="hidden md:flex items-center gap-5">
+            {/* Unauthenticated */}
             {!isAuthenticated && (
               <>
                 <Link
                   to="/"
                   className="text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
                 >
-                  Explorar Habitaciones
+                  Habitaciones
                 </Link>
                 <Link
                   to="/terminos"
@@ -74,17 +141,15 @@ export default function Navbar() {
               </>
             )}
 
-            {isAuthenticated && user?.role === 'guest' && (
-              <Link
-                to="/"
-                className="text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
-              >
-                Explorar Habitaciones
-              </Link>
-            )}
-
+            {/* Guest */}
             {isAuthenticated && user?.role === 'guest' && (
               <>
+                <Link
+                  to="/"
+                  className="text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
+                >
+                  Habitaciones
+                </Link>
                 <Link
                   to="/my-reservations"
                   className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
@@ -92,24 +157,12 @@ export default function Navbar() {
                   <CalendarCheck className="w-4 h-4" />
                   Mis Reservas
                 </Link>
-                <Link
-                  to="/manual"
-                  className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
-                >
-                  <ClipboardList className="w-4 h-4" />
-                  Manual de usuario
-                </Link>
-                <Link
-                  to="/terminos"
-                  className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
-                >
-                  <Hotel className="w-4 h-4" />
-                  Términos y condiciones
-                </Link>
+                <DropdownMenu label="Más" icon={MoreHorizontal} items={masDropdownItems} />
               </>
             )}
 
-            {isAuthenticated && (user?.role === 'staff' || user?.role === 'admin') && (
+            {/* Staff (not admin) */}
+            {isAuthenticated && user?.role === 'staff' && (
               <>
                 <Link
                   to="/check-in-out"
@@ -132,23 +185,11 @@ export default function Navbar() {
                   <DollarSign className="w-4 h-4" />
                   Recaudación
                 </Link>
-                <Link
-                  to="/manual"
-                  className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
-                >
-                  <BookOpen className="w-4 h-4" />
-                  Manual
-                </Link>
-                <Link
-                  to="/terminos"
-                  className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
-                >
-                  <Hotel className="w-4 h-4" />
-                  Términos
-                </Link>
+                <DropdownMenu label="Más" icon={MoreHorizontal} items={staffMasItems} />
               </>
             )}
 
+            {/* Admin */}
             {isAuthenticated && user?.role === 'admin' && (
               <>
                 <Link
@@ -172,13 +213,7 @@ export default function Navbar() {
                   <Users className="w-4 h-4" />
                   Usuarios
                 </Link>
-                <Link
-                  to="/admin/empleados/nuevo"
-                  className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  Registrar Empleado
-                </Link>
+                <DropdownMenu label="Más" icon={MoreHorizontal} items={adminMasItems} />
               </>
             )}
           </div>
@@ -229,8 +264,56 @@ export default function Navbar() {
                 </Link>
               </div>
             )}
+
+            {/* Hamburger - Mobile */}
+            <button
+              className="md:hidden p-2 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label="Menú"
+            >
+              {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileOpen && (
+          <div className="md:hidden border-t border-slate-100 dark:border-slate-800 py-3 space-y-1 animate-slideUp">
+            {!isAuthenticated && (
+              <>
+                <Link to="/" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Habitaciones</Link>
+                <Link to="/terminos" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Términos y Condiciones</Link>
+              </>
+            )}
+            {isAuthenticated && user?.role === 'guest' && (
+              <>
+                <Link to="/" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Habitaciones</Link>
+                <Link to="/my-reservations" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Mis Reservas</Link>
+                <Link to="/manual" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Manual de usuario</Link>
+                <Link to="/terminos" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Términos y condiciones</Link>
+              </>
+            )}
+            {isAuthenticated && user?.role === 'staff' && (
+              <>
+                <Link to="/check-in-out" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Recepción & Check-in</Link>
+                <Link to="/pagados" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Lista Pagados / Conteo</Link>
+                <Link to="/recaudacion" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Recaudación</Link>
+                <Link to="/manual" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Manual</Link>
+                <Link to="/terminos" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Términos</Link>
+              </>
+            )}
+            {isAuthenticated && user?.role === 'admin' && (
+              <>
+                <Link to="/admin/dashboard" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Dashboard</Link>
+                <Link to="/admin/rooms" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Habitaciones</Link>
+                <Link to="/admin/users" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Usuarios</Link>
+                <Link to="/admin/empleados/nuevo" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Registrar Empleado</Link>
+                <Link to="/manual" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Manual</Link>
+                <Link to="/terminos" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Términos</Link>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </nav>
   );

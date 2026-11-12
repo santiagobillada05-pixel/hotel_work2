@@ -1,6 +1,6 @@
 """Reservations router for booking lifecycle, tariffs, check-in/out and history."""
 
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date as date_type
 from typing import Optional
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
@@ -65,7 +65,7 @@ def create_reservation(
         check_in_date=res_in.check_in_date,
         check_out_date=res_in.check_out_date,
         num_guests=res_in.num_guests,
-        status=ReservationStatus.confirmed,
+        status=ReservationStatus.pending,
         base_total=base_total,
         discount_amount=discount_amount,
         tax_amount=tax_amount,
@@ -94,8 +94,8 @@ def create_reservation(
     send_notification(
         db=db,
         user_id=current_user.id,
-        title="¡Reserva Confirmada!",
-        message=f"Tu reserva para la habitación {room.room_number} del {reservation.check_in_date} al {reservation.check_out_date} ha sido registrada. Total: {formatted_total} {room.currency or 'COP'}",
+        title="¡Reserva Recibida!",
+        message=f"Tu reserva para la habitación {room.room_number} del {reservation.check_in_date} al {reservation.check_out_date} está pendiente de confirmación. Total: {formatted_total} {room.currency or 'COP'}. Por favor confírmala antes de tu fecha de llegada.",
         notification_type=NotificationType.confirmation,
         reservation_id=reservation.id,
     )
@@ -142,6 +142,81 @@ def list_all_reservations(
     )
     data = [ReservationResponse.model_validate(r).model_dump() for r in reservations]
     return paginated_response(data=data, total=total, page=page, per_page=per_page)
+
+
+@router.get("/check-confirmations", response_model=dict)
+def check_confirmations(
+    db: Session = Depends(get_db),
+    staff_or_admin: User = Depends(require_role(UserRole.admin, UserRole.staff)),
+):
+    """
+    Revisa reservas pendientes próximas:
+    - Las de mañana: se marcan como que necesitan confirmación.
+    - Las de hoy no confirmadas (dentro de 4 horas del check-in a las 14:00): se auto-cancelan.
+    Solo accesible a staff y admin.
+    """
+    from datetime import timedelta
+
+    now_utc = datetime.now(timezone.utc)
+    today = now_utc.date()
+    tomorrow = today + timedelta(days=1)
+    # Default check-in time: 14:00 (2 PM)
+    checkin_hour = 14
+    auto_cancel_threshold_hours = 4
+
+    pending_reservations = (
+        db.query(Reservation)
+        .filter(
+            Reservation.status == ReservationStatus.pending,
+            Reservation.check_in_date.in_([today, tomorrow]),
+        )
+        .all()
+    )
+
+    needs_confirmation_list = []
+    auto_cancelled_list = []
+
+    for reservation in pending_reservations:
+        if reservation.check_in_date == tomorrow:
+            needs_confirmation_list.append(reservation)
+        elif reservation.check_in_date == today:
+            # Build a timezone-aware datetime for check-in time today (14:00 UTC)
+            checkin_datetime = datetime(today.year, today.month, today.day, checkin_hour, 0, 0, tzinfo=timezone.utc)
+            hours_until_checkin = (checkin_datetime - now_utc).total_seconds() / 3600
+            # If less than 4 hours until check-in time (or already past it), auto-cancel
+            if hours_until_checkin <= auto_cancel_threshold_hours:
+                reservation.status = ReservationStatus.cancelled
+                send_notification(
+                    db=db,
+                    user_id=reservation.user_id,
+                    title="Reserva Cancelada Automáticamente",
+                    message=f"Tu reserva #{reservation.id} para el {reservation.check_in_date} fue cancelada por no ser confirmada a tiempo (menos de {auto_cancel_threshold_hours} horas antes del check-in).",
+                    notification_type=NotificationType.cancellation,
+                    reservation_id=reservation.id,
+                )
+                auto_cancelled_list.append(reservation)
+
+    if auto_cancelled_list:
+        db.commit()
+        for r in auto_cancelled_list:
+            db.refresh(r)
+
+    result = {
+        "needs_confirmation": [
+            ReservationResponse.model_validate(r).model_dump() for r in needs_confirmation_list
+        ],
+        "auto_cancelled": [
+            ReservationResponse.model_validate(r).model_dump() for r in auto_cancelled_list
+        ],
+        "summary": {
+            "needs_confirmation_count": len(needs_confirmation_list),
+            "auto_cancelled_count": len(auto_cancelled_list),
+        },
+    }
+    return success_response(
+        data=result,
+        message=f"Revisión completada: {len(needs_confirmation_list)} reserva(s) necesitan confirmación, {len(auto_cancelled_list)} auto-cancelada(s).",
+    )
 
 
 @router.get("/{id}", response_model=dict)
@@ -381,3 +456,46 @@ def check_out_guest(
 
     data = ReservationResponse.model_validate(reservation).model_dump()
     return success_response(data=data, message="Check-out realizado exitosamente. La habitación ahora está disponible automáticamente.")
+
+
+@router.patch("/{id}/confirm", response_model=dict)
+def confirm_reservation(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user),
+):
+    """
+    Confirma una reserva pendiente.
+    Solo el dueño de la reserva puede confirmarla.
+    Solo las reservas en estado 'pending' pueden ser confirmadas.
+    """
+    reservation = db.query(Reservation).filter(Reservation.id == id).first()
+    if not reservation:
+        raise NotFoundException(f"Reserva con ID {id} no encontrada")
+
+    if current_user.role == UserRole.guest and reservation.user_id != current_user.id:
+        raise ForbiddenException("No tienes permiso para confirmar esta reserva")
+
+    if reservation.status != ReservationStatus.pending:
+        raise BadRequestException(
+            f"Solo se pueden confirmar reservas en estado 'pending' (actual: {reservation.status.value})"
+        )
+
+    reservation.status = ReservationStatus.confirmed
+    db.commit()
+    db.refresh(reservation)
+
+    room = db.query(Room).filter(Room.id == reservation.room_id).first()
+    room_number = room.room_number if room else f"#{reservation.room_id}"
+
+    send_notification(
+        db=db,
+        user_id=reservation.user_id,
+        title="¡Reserva Confirmada!",
+        message=f"Tu reserva #{reservation.id} para la habitación {room_number} del {reservation.check_in_date} al {reservation.check_out_date} ha sido confirmada exitosamente.",
+        notification_type=NotificationType.confirmation,
+        reservation_id=reservation.id,
+    )
+
+    data = ReservationResponse.model_validate(reservation).model_dump()
+    return success_response(data=data, message="Reserva confirmada exitosamente")

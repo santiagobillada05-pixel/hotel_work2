@@ -18,6 +18,7 @@ from app.routers import (
     reports_router,
     notifications_router,
     checkouts_router,
+    extras_router,
 )
 
 settings = get_settings()
@@ -135,6 +136,7 @@ routers = [
     reports_router,
     notifications_router,
     checkouts_router,
+    extras_router,
 ]
 
 for r in routers:

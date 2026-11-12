@@ -65,8 +65,27 @@ class ReservationResponse(BaseModel):
     updated_at: datetime
     is_paid: bool = False
     payments: list["PaymentResponse"] = []
+    extras: list = []
+    extras_total: float = 0.0
+    grand_total: float = 0.0
+    confirmation_deadline: Optional[str] = None
+    needs_confirmation: bool = False
 
     model_config = {"from_attributes": True}
+
+    @model_validator(mode="after")
+    def compute_extras_fields(self) -> "ReservationResponse":
+        """Computes extras_total and grand_total from extras list."""
+        total = 0.0
+        for e in (self.extras or []):
+            if isinstance(e, dict):
+                total += float(e.get("subtotal", 0.0) or 0.0)
+            else:
+                total += float(getattr(e, "subtotal", 0.0) or 0.0)
+        self.extras_total = total
+        self.grand_total = float(self.final_total or 0.0) + total
+        return self
+
 
 from app.schemas.payment import PaymentResponse
 ReservationResponse.model_rebuild()

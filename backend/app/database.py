@@ -77,6 +77,7 @@ def init_db() -> None:
         _migrate_currency_to_cop()
     _migrate_clean_room_statuses()
     _seed_default_admin()
+    _seed_default_extras()
 
 def _seed_default_admin() -> None:
     """Seeds a default admin user if no admin exists in the database, and ensures Santiago's admin exists."""
@@ -126,6 +127,41 @@ def _seed_default_admin() -> None:
             if updated:
                 db.commit()
                 print("[init_db] Santiago admin role and status verified.")
+
+
+def _seed_default_extras() -> None:
+    """Seeds default extra services if the table is empty."""
+    from app.models.extra_service import ExtraService, ExtraServiceCategory
+
+    default_extras = [
+        {"name": "Desayuno Buffet", "description": "Desayuno completo tipo buffet con opciones internacionales", "price": 35000, "category": "premium", "icon": "UtensilsCrossed"},
+        {"name": "Acceso a Piscina", "description": "Acceso ilimitado a la piscina climatizada durante su estadía", "price": 25000, "category": "premium", "icon": "Waves"},
+        {"name": "Spa & Bienestar", "description": "Sesión de relajación en nuestro spa con sauna y jacuzzi", "price": 80000, "category": "premium", "icon": "Sparkles"},
+        {"name": "Gimnasio", "description": "Acceso completo al gimnasio equipado las 24 horas", "price": 15000, "category": "premium", "icon": "Dumbbell"},
+        {"name": "WiFi Premium", "description": "Conexión WiFi de alta velocidad sin límites", "price": 0, "category": "included", "icon": "Wifi"},
+        {"name": "Estacionamiento", "description": "Plaza de estacionamiento privado y vigilado", "price": 20000, "category": "premium", "icon": "Car"},
+        {"name": "Servicio a la Habitación", "description": "Servicio de comidas y bebidas directamente en su habitación", "price": 45000, "category": "premium", "icon": "ConciergeBell"},
+        {"name": "Lavandería Express", "description": "Servicio de lavandería y planchado en el mismo día", "price": 30000, "category": "premium", "icon": "Shirt"},
+        {"name": "Minibar Premium", "description": "Minibar surtido con bebidas y snacks de cortesía", "price": 50000, "category": "premium", "icon": "Wine"},
+        {"name": "Traslado Aeropuerto", "description": "Transporte privado desde/hacia el aeropuerto", "price": 60000, "category": "premium", "icon": "Plane"},
+    ]
+
+    with SessionLocal() as db:
+        existing_count = db.query(ExtraService).count()
+        if existing_count == 0:
+            for extra_data in default_extras:
+                extra = ExtraService(
+                    name=extra_data["name"],
+                    description=extra_data["description"],
+                    price=extra_data["price"],
+                    currency="COP",
+                    category=ExtraServiceCategory(extra_data["category"]),
+                    icon=extra_data["icon"],
+                    is_active=True,
+                )
+                db.add(extra)
+            db.commit()
+            print(f"[init_db] Seeded {len(default_extras)} default extra services.")
 
 
 def _migrate_image_urls() -> None:

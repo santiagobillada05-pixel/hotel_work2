@@ -48,6 +48,7 @@ class Reservation(Base):
     room = relationship("Room", back_populates="reservations")
     payments = relationship("Payment", back_populates="reservation", lazy="selectin")
     notifications = relationship("Notification", back_populates="reservation", lazy="selectin")
+    extras = relationship("ReservationExtra", back_populates="reservation", lazy="selectin")
 
     @property
     def is_paid(self) -> bool:

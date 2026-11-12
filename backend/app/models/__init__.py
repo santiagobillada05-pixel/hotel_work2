@@ -6,6 +6,8 @@ from app.models.reservation import Reservation, ReservationStatus
 from app.models.payment import Payment, PaymentMethod, PaymentStatus
 from app.models.notification import Notification, NotificationType
 from app.models.checkout_record import CheckoutRecord, CountingStatus
+from app.models.extra_service import ExtraService, ExtraServiceCategory
+from app.models.reservation_extra import ReservationExtra
 
 __all__ = [
     "User", "UserRole",
@@ -14,4 +16,6 @@ __all__ = [
     "Payment", "PaymentMethod", "PaymentStatus",
     "Notification", "NotificationType",
     "CheckoutRecord", "CountingStatus",
+    "ExtraService", "ExtraServiceCategory",
+    "ReservationExtra",
 ]

@@ -27,7 +27,8 @@ export default function ReservationReceiptModal({ reservation, onClose }) {
 
   const isLegacy = Number(reservation.final_total) > 0 && Number(reservation.final_total) < 2000;
   const mult = isLegacy ? 4000 : 1;
-  const fmt = (amt) => amt != null ? `$${Math.round(amt * mult).toLocaleString('es-CO')} COP` : '$0 COP';
+  const fmtRoom = (amt) => amt != null ? `$${Math.round(Number(amt) * mult).toLocaleString('es-CO')} COP` : '$0 COP';
+  const fmtCop = (amt) => amt != null ? `$${Math.round(Number(amt)).toLocaleString('es-CO')} COP` : '$0 COP';
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm print:p-0 print:bg-white dark:bg-slate-800 animate-fadeIn">
@@ -140,7 +141,7 @@ export default function ReservationReceiptModal({ reservation, onClose }) {
                   {nights}
                 </td>
                 <td className="py-3 text-right font-extrabold text-slate-900 dark:text-slate-50">
-                  {fmt(reservation.base_total)}
+                  {fmtRoom(reservation.base_total)}
                 </td>
               </tr>
               {reservation.discount_amount > 0 && (
@@ -148,7 +149,7 @@ export default function ReservationReceiptModal({ reservation, onClose }) {
                   <td className="py-2.5 font-medium">Descuento aplicado</td>
                   <td className="py-2.5 text-center">-</td>
                   <td className="py-2.5 text-right font-bold">
-                    -{fmt(reservation.discount_amount)}
+                    -{fmtRoom(reservation.discount_amount)}
                   </td>
                 </tr>
               )}
@@ -156,17 +157,61 @@ export default function ReservationReceiptModal({ reservation, onClose }) {
                 <td className="py-2.5 text-slate-600 dark:text-slate-300">Impuestos (IVA 19%)</td>
                 <td className="py-2.5 text-center">-</td>
                 <td className="py-2.5 text-right font-semibold text-slate-800 dark:text-slate-100">
-                  {fmt(reservation.tax_amount)}
+                  {fmtRoom(reservation.tax_amount)}
                 </td>
               </tr>
+              {/* Extras */}
+              {Array.isArray(reservation.extras) && reservation.extras.length > 0 && (
+                <>
+                  <tr>
+                    <td className="py-2 pt-3" colSpan="3">
+                      <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                        Servicios Adicionales
+                      </span>
+                    </td>
+                  </tr>
+                  {reservation.extras.map((extra, idx) => (
+                    <tr key={idx} className="text-slate-600 dark:text-slate-300">
+                      <td className="py-2">
+                        {extra.extra_service?.name || `Servicio #${extra.extra_service_id}`}
+                        {extra.quantity > 1 && (
+                          <span className="text-slate-400"> × {extra.quantity}</span>
+                        )}
+                      </td>
+                      <td className="py-2 text-center">-</td>
+                      <td className="py-2 text-right font-semibold">
+                        {fmtCop(extra.subtotal)}
+                      </td>
+                    </tr>
+                  ))}
+                </>
+              )}
             </tbody>
             <tfoot>
+              {Array.isArray(reservation.extras) && reservation.extras.length > 0 && (
+                <tr className="text-slate-600 dark:text-slate-300 text-xs">
+                  <td className="pt-2" colSpan="2">Subtotal habitación + servicios</td>
+                  <td className="pt-2 text-right font-semibold">
+                    {(() => {
+                      const extrasSum = (reservation.extras || []).reduce((s, e) => s + (Number(e.subtotal) || 0), 0);
+                      const roomTotal = Number(reservation.final_total) * mult;
+                      return fmtCop(roomTotal + extrasSum);
+                    })()}
+                  </td>
+                </tr>
+              )}
               <tr className="border-t-2 border-slate-900 font-extrabold text-sm text-slate-900 dark:text-slate-50">
                 <td className="pt-3" colSpan="2">
-                  Total Facturado
+                  Total a Pagar en Hotel
                 </td>
                 <td className="pt-3 text-right text-brand-700 text-base">
-                  {fmt(reservation.final_total)}
+                  {(() => {
+                    const extrasSum = Array.isArray(reservation.extras)
+                      ? reservation.extras.reduce((s, e) => s + (Number(e.subtotal) || 0), 0)
+                      : 0;
+                    const roomTotal = Number(reservation.final_total) * mult;
+                    return fmtCop(roomTotal + extrasSum);
+                  })()}
                 </td>
               </tr>
             </tfoot>

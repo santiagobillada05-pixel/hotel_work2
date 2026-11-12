@@ -9,4 +9,5 @@ export const reservationsApi = {
   cancelReservation: (id) => api.patch(`/reservations/${id}/cancel`),
   checkIn: (id) => api.patch(`/reservations/${id}/check-in`),
   checkOut: (id) => api.patch(`/reservations/${id}/check-out`),
+  confirmReservation: (id) => api.patch(`/reservations/${id}/confirm`),
 };

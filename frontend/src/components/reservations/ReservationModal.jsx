@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
 import { reservationsApi } from '../../api/reservationsApi';
+import ExtrasSelector from './ExtrasSelector';
 import { 
   X, 
   Calendar, 
@@ -10,7 +11,10 @@ import {
   AlertCircle, 
   CheckCircle2, 
   Loader2,
-  Receipt
+  Receipt,
+  Clock,
+  Info,
+  ShoppingBag
 } from 'lucide-react';
 
 export default function ReservationModal({ room, initialCheckIn, initialCheckOut, onClose, onSuccess }) {
@@ -33,6 +37,7 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successData, setSuccessData] = useState(null);
+  const [extrasTotal, setExtrasTotal] = useState(0);
 
   // Live tariff calculation
   const calculations = useMemo(() => {
@@ -91,7 +96,7 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
         discount_rate: 0.0,
       });
 
-      setSuccessData(response.data);
+      setSuccessData(response.data || response);
       if (onSuccess) onSuccess();
     } catch (err) {
       if (err.statusCode === 401) {
@@ -104,13 +109,18 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
     }
   };
 
+  const grandTotal = (calculations?.rawFinalTotal || 0) + extrasTotal;
+  const fmtAmt = (amt) => new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(amt);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
       <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-100 dark:border-slate-700/50 flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50/50">
+        <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 shrink-0">
           <div>
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50">Confirmar Reserva</h3>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-50">
+              {successData ? 'Reserva Registrada' : 'Confirmar Reserva'}
+            </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
               Habitación {room.room_number} • ${Number(room.price_per_night > 0 && room.price_per_night < 2000 ? room.price_per_night * 4000 : room.price_per_night).toLocaleString('es-CO')} COP / noche
             </p>
@@ -126,30 +136,82 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
         {/* Content */}
         <div className="p-6 overflow-y-auto">
           {successData ? (
-            <div className="text-center py-6">
-              <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle2 className="w-10 h-10" />
+            <div className="space-y-5">
+              {/* Pending Status Badge */}
+              <div className="text-center py-4">
+                <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Clock className="w-10 h-10" />
+                </div>
+                <h4 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-1">¡Reserva Creada!</h4>
+                <span className="inline-block px-3 py-1 bg-amber-100 text-amber-700 border border-amber-300 rounded-full text-xs font-extrabold uppercase tracking-wider mb-3">
+                  Estado: Pendiente
+                </span>
+                <p className="text-slate-600 dark:text-slate-300 text-sm leading-relaxed">
+                  Tu reserva <span className="font-bold text-slate-900 dark:text-slate-50">#{successData.id}</span> fue registrada. 
+                  Está en estado <strong>pendiente</strong> hasta que la confirmes.
+                </p>
               </div>
-              <h4 className="text-xl font-bold text-slate-900 dark:text-slate-50 mb-2">¡Reserva Confirmada!</h4>
-              <p className="text-slate-600 dark:text-slate-300 text-sm mb-6 leading-relaxed">
-                Tu reserva con código <span className="font-bold text-slate-900 dark:text-slate-50">#{successData.id}</span> ha sido registrada exitosamente. Hemos enviado los detalles a tu cuenta.
-              </p>
 
-              <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 text-left border border-slate-200 dark:border-slate-700 mb-6 text-xs space-y-2">
+              {/* Confirmation deadline info */}
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl flex items-start gap-3">
+                <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-1">
+                  <p className="font-bold text-amber-950 dark:text-amber-100">
+                    Importante: Confirmación Requerida
+                  </p>
+                  <p>
+                    Debes confirmar que asistirás <strong>1 día antes del check-in</strong> (o a más tardar <strong>4 horas antes</strong> de la hora prevista) desde la pestaña <strong>"Mis Reservas"</strong>.
+                  </p>
+                  <p className="text-[11px] font-semibold text-rose-700 dark:text-rose-400">
+                    Si no confirmas a tiempo, la reserva se cancelará automáticamente.
+                  </p>
+                </div>
+              </div>
+
+              {/* Reservation details */}
+              <div className="bg-slate-50 dark:bg-slate-900/50 rounded-2xl p-4 text-left border border-slate-200 dark:border-slate-700 text-xs space-y-2">
+                <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                  <span>Código de reserva:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-100">#{successData.id}</span>
+                </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-300">
                   <span>Fechas:</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-100">{successData.check_in_date} al {successData.check_out_date}</span>
                 </div>
                 <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>Total a pagar:</span>
-                  <span className="font-bold text-slate-900 dark:text-slate-50 text-sm">
+                  <span>Subtotal habitación:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-100">
                     {calculations ? `${calculations.symbol}${calculations.finalTotal} ${calculations.currency}` : `$${Number(successData.final_total).toLocaleString('es-CO')} COP`}
                   </span>
                 </div>
-                <div className="flex justify-between text-slate-600 dark:text-slate-300">
-                  <span>Estado:</span>
-                  <span className="font-semibold text-emerald-600 uppercase">{successData.status}</span>
+                {extrasTotal > 0 && (
+                  <div className="flex justify-between text-slate-600 dark:text-slate-300">
+                    <span>Servicios adicionales:</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-100">${fmtAmt(extrasTotal)} COP</span>
+                  </div>
+                )}
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-2 flex justify-between font-extrabold text-slate-900 dark:text-slate-50 text-sm">
+                  <span>Total a pagar:</span>
+                  <span className="text-brand-700">${fmtAmt(grandTotal)} COP</span>
                 </div>
+              </div>
+
+              {/* Extras Selector */}
+              <div className="border-t border-slate-100 dark:border-slate-700/50 pt-4">
+                <div className="flex items-center gap-2 text-sm font-extrabold text-slate-700 dark:text-slate-200 mb-3">
+                  <ShoppingBag className="w-4 h-4 text-brand-600" />
+                  ¿Deseas agregar servicios a tu estadía?
+                </div>
+                <ExtrasSelector
+                  reservationId={successData.id}
+                  roomTotal={calculations?.rawFinalTotal || Number(successData.final_total)}
+                  onTotalChange={setExtrasTotal}
+                />
+              </div>
+
+              {/* Payment note */}
+              <div className="p-3.5 bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-700/50 rounded-xl text-xs text-slate-600 dark:text-slate-300 text-center">
+                💳 <strong>Recuerda:</strong> No se realiza pago en línea. El total se paga directamente en el hotel.
               </div>
 
               <div className="flex gap-3">
@@ -285,6 +347,26 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                   Selecciona fechas válidas para calcular la tarifa automáticamente.
                 </p>
               )}
+
+              {/* Important confirmation policy notice */}
+              <div className="p-3.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl flex items-start gap-3">
+                <Info className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-amber-900 dark:text-amber-200 leading-relaxed space-y-1">
+                  <p className="font-bold text-amber-950 dark:text-amber-100 flex items-center gap-1.5">
+                    <span>⚠️ Política de Confirmación</span>
+                  </p>
+                  <p>
+                    La reserva quedará en estado <strong>Pendiente</strong>:
+                  </p>
+                  <ul className="list-disc list-inside space-y-0.5 pl-1 opacity-95">
+                    <li>Debes confirmar tu asistencia <strong>1 día antes</strong> del check-in en <em>"Mis Reservas"</em>.</li>
+                    <li>O como plazo máximo hasta <strong>4 horas antes</strong> de la hora de llegada.</li>
+                  </ul>
+                  <p className="text-[11px] font-semibold text-rose-700 dark:text-rose-400 pt-0.5">
+                    * Si no confirmas a tiempo, el sistema cancelará la reserva automáticamente.
+                  </p>
+                </div>
+              </div>
 
               {/* Action Button */}
               <button

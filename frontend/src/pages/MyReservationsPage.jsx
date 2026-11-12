@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { reservationsApi } from '../api/reservationsApi';
+import { extrasApi } from '../api/extrasApi';
 import { 
   CalendarCheck, 
   Calendar, 
@@ -10,9 +11,13 @@ import {
   XCircle,
   Receipt,
   BedDouble,
-  FileText
+  FileText,
+  ShoppingBag,
+  Plus,
+  AlertTriangle
 } from 'lucide-react';
 import ReservationReceiptModal from '../components/reservations/ReservationReceiptModal';
+import ExtrasSelector from '../components/reservations/ExtrasSelector';
 
 export default function MyReservationsPage() {
   const [reservations, setReservations] = useState([]);
@@ -20,12 +25,14 @@ export default function MyReservationsPage() {
   const [error, setError] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
   const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [extrasModalReservation, setExtrasModalReservation] = useState(null);
+  const [confirmingId, setConfirmingId] = useState(null);
 
   const fetchMyReservations = async () => {
     setLoading(true);
     try {
       const res = await reservationsApi.getMyReservations();
-      setReservations(res.data || []);
+      setReservations(res.data || res || []);
     } catch (err) {
       setError(err.message || 'Error al obtener tu historial de reservas');
     } finally {
@@ -50,6 +57,19 @@ export default function MyReservationsPage() {
     }
   };
 
+  const handleConfirm = async (id) => {
+    if (!window.confirm('¿Confirmar esta reserva? Recuerda que el pago se realiza en el hotel.')) return;
+    setConfirmingId(id);
+    try {
+      await reservationsApi.confirmReservation(id);
+      await fetchMyReservations();
+    } catch (err) {
+      alert(err.message || 'Error al confirmar la reserva');
+    } finally {
+      setConfirmingId(null);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const map = {
       pending: { label: 'Pendiente', bg: 'bg-amber-50 text-amber-700 border-amber-200' },
@@ -66,6 +86,25 @@ export default function MyReservationsPage() {
     );
   };
 
+  const getDaysUntilCheckIn = (checkInDate) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkIn = new Date(checkInDate);
+    checkIn.setHours(0, 0, 0, 0);
+    return Math.ceil((checkIn - today) / (1000 * 60 * 60 * 24));
+  };
+
+  const isDeadlineApproaching = (checkInDate) => {
+    const days = getDaysUntilCheckIn(checkInDate);
+    return days >= 0 && days <= 2;
+  };
+
+  const fmtAmt = (amt) => Number(amt) > 0 && Number(amt) < 2000
+    ? (Number(amt) * 4000).toLocaleString('es-CO')
+    : Number(amt).toLocaleString('es-CO');
+
+  const hasPendingReservations = reservations.some((r) => r.status === 'pending');
+
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-slate-50 dark:bg-slate-900/50 py-8">
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -78,6 +117,19 @@ export default function MyReservationsPage() {
             Consulta el estado de tus reservas, detalles de estancia y recibos de pago
           </p>
         </div>
+
+        {/* Warning banner for pending reservations */}
+        {hasPendingReservations && (
+          <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3 animate-slideUp">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <div>
+              <p className="text-sm font-bold text-amber-800">Tienes reservas pendientes de confirmar</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Reservas sin confirmar serán canceladas automáticamente si no se confirman un día antes del check-in.
+              </p>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-700 text-xs flex items-center gap-2">
@@ -101,68 +153,149 @@ export default function MyReservationsPage() {
           </div>
         ) : (
           <div className="space-y-4">
-            {reservations.map((res) => (
-              <div
-                key={res.id}
-                className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row justify-between md:items-center gap-4"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3">
-                    <span className="font-extrabold text-base text-slate-900 dark:text-slate-50">
-                      Reserva #{res.id}
-                    </span>
-                    {getStatusBadge(res.status)}
-                  </div>
+            {reservations.map((res) => {
+              const daysUntilCheckIn = getDaysUntilCheckIn(res.check_in_date);
+              const approaching = res.status === 'pending' && isDeadlineApproaching(res.check_in_date);
+              const extras = res.extras || [];
+              const extrasTotal = extras.reduce((sum, e) => sum + (e.subtotal || e.unit_price || 0), 0);
+              const roomTotal = Number(res.final_total) > 0 && Number(res.final_total) < 2000
+                ? Number(res.final_total) * 4000
+                : Number(res.final_total);
+              const grandTotal = roomTotal + extrasTotal;
 
-                  <div className="flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    <span className="flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4 text-brand-600" />
-                      {res.check_in_date} al {res.check_out_date}
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                      <BedDouble className="w-4 h-4 text-brand-600" />
-                      Habitación #{res.room_id}
-                    </span>
-                  </div>
-
-                  {res.special_requests && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50 max-w-lg">
-                      "{res.special_requests}"
-                    </p>
+              return (
+                <div
+                  key={res.id}
+                  className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all overflow-hidden"
+                >
+                  {/* Deadline warning */}
+                  {approaching && (
+                    <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center gap-2 animate-slideUp">
+                      <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                      <p className="text-xs font-bold text-amber-800">
+                        {daysUntilCheckIn === 0
+                          ? '¡Hoy es el último día para confirmar esta reserva!'
+                          : daysUntilCheckIn === 1
+                          ? '¡Mañana es el último día para confirmar!'
+                          : `Solo quedan ${daysUntilCheckIn} días para confirmar esta reserva`}
+                      </p>
+                    </div>
                   )}
-                </div>
 
-                <div className="flex flex-row md:flex-col items-center md:items-end justify-between border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 dark:border-slate-700/50 gap-3">
-                  <div className="text-left md:text-right">
-                    <span className="text-xs text-slate-400 block font-medium">Total Facturado</span>
-                    <span className="text-xl font-black text-slate-900 dark:text-slate-50">
-                      ${Number(res.final_total) > 0 && Number(res.final_total) < 2000 ? (res.final_total * 4000).toLocaleString('es-CO') : Number(res.final_total).toLocaleString('es-CO')} COP
-                    </span>
-                    <span className="text-xs text-slate-400 block">IVA 19% incl.</span>
+                  <div className="p-6 flex flex-col md:flex-row justify-between md:items-start gap-4">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex items-center gap-3 flex-wrap">
+                        <span className="font-extrabold text-base text-slate-900 dark:text-slate-50">
+                          Reserva #{res.id}
+                        </span>
+                        {getStatusBadge(res.status)}
+                      </div>
+
+                      <div className="flex flex-wrap gap-4 text-xs text-slate-600 dark:text-slate-300 font-medium">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="w-4 h-4 text-brand-600" />
+                          {res.check_in_date} al {res.check_out_date}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <BedDouble className="w-4 h-4 text-brand-600" />
+                          Habitación #{res.room_id}
+                        </span>
+                      </div>
+
+                      {res.special_requests && (
+                        <p className="text-xs text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50 max-w-lg">
+                          "{res.special_requests}"
+                        </p>
+                      )}
+
+                      {/* Extras list */}
+                      {extras.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Servicios agregados:</p>
+                          {extras.map((extra, idx) => (
+                            <div key={idx} className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/30 px-2.5 py-1.5 rounded-lg">
+                              <span>{extra.extra_service?.name || `Servicio #${extra.extra_service_id}`}</span>
+                              <span className="font-semibold">${(extra.subtotal || extra.unit_price || 0).toLocaleString('es-CO')} COP</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex flex-row md:flex-col items-center md:items-end justify-between border-t md:border-t-0 pt-3 md:pt-0 border-slate-100 dark:border-slate-700/50 gap-3">
+                      <div className="text-left md:text-right">
+                        <span className="text-xs text-slate-400 block font-medium">Total Habitación</span>
+                        <span className="text-lg font-black text-slate-900 dark:text-slate-50">
+                          ${roomTotal.toLocaleString('es-CO')} COP
+                        </span>
+                        {extrasTotal > 0 && (
+                          <>
+                            <span className="text-xs text-slate-400 block mt-1 font-medium">+ Servicios</span>
+                            <span className="text-sm font-bold text-brand-600">
+                              +${extrasTotal.toLocaleString('es-CO')} COP
+                            </span>
+                            <div className="border-t border-slate-200 dark:border-slate-600 mt-1 pt-1">
+                              <span className="text-xs text-slate-400 block font-medium">Gran Total</span>
+                              <span className="text-base font-black text-brand-700">
+                                ${grandTotal.toLocaleString('es-CO')} COP
+                              </span>
+                            </div>
+                          </>
+                        )}
+                        <span className="text-xs text-slate-400 block">IVA 19% incl.</span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 justify-end">
+                        <button
+                          onClick={() => setSelectedReceipt(res)}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
+                        >
+                          <Receipt className="w-3.5 h-3.5 text-brand-600" />
+                          Ver Factura
+                        </button>
+
+                        {/* Add extras button for pending/confirmed */}
+                        {['pending', 'confirmed'].includes(res.status) && (
+                          <button
+                            onClick={() => setExtrasModalReservation(res)}
+                            className="px-3 py-1.5 bg-brand-50 hover:bg-brand-100 text-brand-700 text-xs font-bold rounded-xl border border-brand-200 transition-colors flex items-center gap-1.5"
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            Servicios
+                          </button>
+                        )}
+
+                        {/* Confirm button for pending */}
+                        {res.status === 'pending' && (
+                          <button
+                            onClick={() => handleConfirm(res.id)}
+                            disabled={confirmingId === res.id}
+                            className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 transition-colors flex items-center gap-1.5 disabled:opacity-50"
+                          >
+                            {confirmingId === res.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : (
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            )}
+                            {confirmingId === res.id ? 'Confirmando...' : 'Confirmar'}
+                          </button>
+                        )}
+
+                        {['pending', 'confirmed'].includes(res.status) && (
+                          <button
+                            onClick={() => handleCancel(res.id)}
+                            disabled={actionLoading === res.id}
+                            className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 transition-colors disabled:opacity-50"
+                          >
+                            {actionLoading === res.id ? 'Cancelando...' : 'Cancelar'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setSelectedReceipt(res)}
-                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition-colors flex items-center gap-1.5"
-                    >
-                      <Receipt className="w-3.5 h-3.5 text-brand-600" />
-                      Ver Factura
-                    </button>
-
-                    {['pending', 'confirmed'].includes(res.status) && (
-                      <button
-                        onClick={() => handleCancel(res.id)}
-                        disabled={actionLoading === res.id}
-                        className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-bold rounded-xl border border-rose-200 transition-colors disabled:opacity-50"
-                      >
-                        {actionLoading === res.id ? 'Cancelando...' : 'Cancelar'}
-                      </button>
-                    )}
-                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
@@ -172,6 +305,42 @@ export default function MyReservationsPage() {
             reservation={selectedReceipt}
             onClose={() => setSelectedReceipt(null)}
           />
+        )}
+
+        {/* Extras Modal */}
+        {extrasModalReservation && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-lg w-full shadow-2xl border border-slate-100 dark:border-slate-700/50 flex flex-col max-h-[85vh]">
+              <div className="p-5 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+                    <ShoppingBag className="w-4 h-4 text-brand-600" />
+                    Agregar Servicios
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Reserva #{extrasModalReservation.id}
+                  </p>
+                </div>
+                <button
+                  onClick={() => { setExtrasModalReservation(null); fetchMyReservations(); }}
+                  className="p-1.5 text-slate-400 hover:text-slate-600 dark:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="p-5 overflow-y-auto">
+                <ExtrasSelector
+                  reservationId={extrasModalReservation.id}
+                  roomTotal={
+                    Number(extrasModalReservation.final_total) > 0 && Number(extrasModalReservation.final_total) < 2000
+                      ? Number(extrasModalReservation.final_total) * 4000
+                      : Number(extrasModalReservation.final_total)
+                  }
+                  onTotalChange={() => {}}
+                />
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
