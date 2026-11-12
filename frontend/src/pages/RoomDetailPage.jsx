@@ -15,7 +15,9 @@ import {
   Clock, 
   Receipt, 
   Loader2, 
-  AlertCircle 
+  AlertCircle,
+  Info,
+  CreditCard
 } from "lucide-react";
 
 export default function RoomDetailPage() {
@@ -285,19 +287,42 @@ export default function RoomDetailPage() {
               </div>
 
               {bookingSuccess ? (
-                <div className="text-center py-6">
-                  <div className="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <CheckCircle2 className="w-6 h-6" />
+                <div className="text-center py-6 space-y-4">
+                  <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <Clock className="w-8 h-8" />
                   </div>
-                  <h4 className="text-base font-bold text-slate-900 dark:text-slate-50 mb-1">Reserva Registrada!</h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                    Tu estancia ha sido confirmada satisfactoriamente.
-                  </p>
+                  <div>
+                    <span className="inline-block px-3 py-0.5 bg-amber-100 text-amber-700 border border-amber-300 rounded-full text-[11px] font-extrabold uppercase tracking-wider mb-2">
+                      Estado: Pendiente
+                    </span>
+                    <h4 className="text-base font-extrabold text-slate-900 dark:text-slate-50">¡Reserva Creada!</h4>
+                  </div>
+                  
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl text-left text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                    <p className="font-bold flex items-center gap-1.5 text-amber-950 dark:text-amber-100">
+                      <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                      Confirmación Requerida
+                    </p>
+                    <p className="text-[11px] leading-relaxed">
+                      Debes confirmar tu asistencia <strong>1 día antes de tu llegada</strong> (o hasta 4 horas antes) en <em>Mis Reservas</em>. De lo contrario, se cancelará automáticamente.
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl text-left text-xs text-emerald-900 dark:text-emerald-200 space-y-0.5">
+                    <p className="font-bold flex items-center gap-1.5 text-emerald-950 dark:text-emerald-100">
+                      <CreditCard className="w-4 h-4 text-emerald-600 shrink-0" />
+                      Pago en el Hotel
+                    </p>
+                    <p className="text-[11px] leading-relaxed">
+                      No pagas en línea. Cancelas al llegar por transferencia, tarjeta o efectivo.
+                    </p>
+                  </div>
+
                   <button
                     onClick={() => navigate("/my-reservations")}
-                    className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs"
+                    className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-xl text-xs shadow transition-all"
                   >
-                    Ir a Mis Reservas
+                    Ver Mis Reservas
                   </button>
                 </div>
               ) : !room.is_room_bookable ? (
@@ -397,6 +422,24 @@ export default function RoomDetailPage() {
                       </div>
                     </div>
                   )}
+
+                  {/* Confirmation & Payment notice */}
+                  <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                    <p className="font-bold flex items-center gap-1.5 text-amber-950 dark:text-amber-100">
+                      <Info className="w-4 h-4 text-amber-600 shrink-0" />
+                      Política de Confirmación
+                    </p>
+                    <p className="text-[11px] leading-relaxed">
+                      La reserva queda en estado <strong>Pendiente</strong>. Deberás confirmarla 1 día antes de la llegada en "Mis Reservas" para evitar auto-cancelación.
+                    </p>
+                  </div>
+
+                  <div className="p-2.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-xl text-xs text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+                    <CreditCard className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span className="text-[11px] font-semibold">
+                      Pago al llegar al hotel: Transferencia, Tarjeta o Efectivo
+                    </span>
+                  </div>
 
                   <button
                     type="submit"

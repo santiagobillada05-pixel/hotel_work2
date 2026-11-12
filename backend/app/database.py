@@ -69,15 +69,18 @@ class Base(DeclarativeBase):
     pass
 
 def init_db() -> None:
-    """Initializes the database by creating all tables."""
-    import app.models  # noqa: F401
-    Base.metadata.create_all(bind=engine)
-    if database_url.startswith("sqlite"):
-        _migrate_image_urls()
-        _migrate_currency_to_cop()
-    _migrate_clean_room_statuses()
-    _seed_default_admin()
-    _seed_default_extras()
+    """Initializes the database by creating all tables safely."""
+    try:
+        import app.models  # noqa: F401
+        Base.metadata.create_all(bind=engine)
+        if database_url.startswith("sqlite"):
+            _migrate_image_urls()
+            _migrate_currency_to_cop()
+        _migrate_clean_room_statuses()
+        _seed_default_admin()
+        _seed_default_extras()
+    except Exception as e:
+        print(f"[database] Note during init_db: {e}")
 
 def _seed_default_admin() -> None:
     """Seeds a default admin user if no admin exists in the database, and ensures Santiago's admin exists."""

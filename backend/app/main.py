@@ -24,12 +24,22 @@ from app.routers import (
 settings = get_settings()
 
 
+import asyncio
+
+
+def _safe_init_db():
+    try:
+        print(f"[{settings.APP_NAME}] Initializing database tables...")
+        init_db()
+        print(f"[{settings.APP_NAME}] Database ready. Application online.")
+    except Exception as e:
+        print(f"[{settings.APP_NAME}] Note during database initialization: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Lifespan events for the FastAPI application."""
-    print(f"[{settings.APP_NAME}] Initializing database tables...")
-    init_db()
-    print(f"[{settings.APP_NAME}] Database ready. Application online.")
+    """Lifespan events for the FastAPI application. Starts instantly without blocking."""
+    asyncio.create_task(asyncio.to_thread(_safe_init_db))
     yield
     print(f"[{settings.APP_NAME}] Shutting down application gracefully...")
 

@@ -21,16 +21,13 @@ export default function RoomsPage() {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
-  const location = useLocation();
-
-  // El abre bocas se muestra siempre al abrir la página, iniciar sesión o entrar a Habitaciones
-  const [showWelcome, setShowWelcome] = useState(true);
-
-  useEffect(() => {
-    setShowWelcome(true);
-  }, [location.key]);
+  // El abre bocas se muestra al abrir la página por primera vez o si cerró la pestaña y volvió a entrar (sessionStorage)
+  const [showWelcome, setShowWelcome] = useState(() => {
+    return !sessionStorage.getItem('hotelwork_welcome_seen');
+  });
 
   const handleCloseWelcome = () => {
+    sessionStorage.setItem('hotelwork_welcome_seen', 'true');
     setShowWelcome(false);
   };
 

@@ -89,8 +89,10 @@ export default function CheckInOutPage() {
     setPaymentModalData(res);
     setPaymentModalPaymentId(paymentId);
     setPaymentCurrency('COP');
-    const baseCop = isLegacyUSD(res.final_total) ? res.final_total * 4000 : res.final_total;
-    setPaymentAmount(new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(baseCop));
+    const roomCop = isLegacyUSD(res.final_total) ? res.final_total * 4000 : Number(res.final_total || 0);
+    const extrasCop = Number(res.extras_total || 0);
+    const grandCop = roomCop + extrasCop;
+    setPaymentAmount(new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(grandCop));
     setPaymentRef(`TXN-${Date.now().toString().slice(-6)}`);
   };
 
@@ -223,8 +225,17 @@ export default function CheckInOutPage() {
 
                           <td className="py-4 px-6">
                             <span className="font-black text-slate-900 dark:text-slate-50">
-                              ${isLegacyUSD(res.final_total) ? (res.final_total * 4000).toLocaleString('es-CO') : Number(res.final_total).toLocaleString('es-CO')} COP
+                              ${(() => {
+                                const roomCop = isLegacyUSD(res.final_total) ? res.final_total * 4000 : Number(res.final_total || 0);
+                                const extrasCop = Number(res.extras_total || 0);
+                                return (roomCop + extrasCop).toLocaleString('es-CO');
+                              })()} COP
                             </span>
+                            {Number(res.extras_total) > 0 && (
+                              <span className="block text-[11px] text-brand-600 font-semibold">
+                                +${Number(res.extras_total).toLocaleString('es-CO')} en servicios
+                              </span>
+                            )}
                             {res.is_paid && (
                               <span className="block text-[10px] font-bold text-emerald-600 uppercase">
                                 Pago Confirmado
@@ -324,12 +335,26 @@ export default function CheckInOutPage() {
                 </button>
               </div>
 
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                Reserva #{paymentModalData.id} • Valor base:{' '}
-                <span className="font-bold text-slate-800 dark:text-slate-200">
-                  ${isLegacyUSD(paymentModalData.final_total) ? (paymentModalData.final_total * 4000).toLocaleString('es-CO') : Number(paymentModalData.final_total).toLocaleString('es-CO')} COP
-                </span>
-              </p>
+              <div className="text-xs text-slate-500 dark:text-slate-400 mb-4 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 space-y-1">
+                <div className="flex justify-between">
+                  <span>Habitación #{paymentModalData.room_id}:</span>
+                  <span className="font-semibold text-slate-800 dark:text-slate-200">
+                    ${(isLegacyUSD(paymentModalData.final_total) ? paymentModalData.final_total * 4000 : Number(paymentModalData.final_total || 0)).toLocaleString('es-CO')} COP
+                  </span>
+                </div>
+                {Number(paymentModalData.extras_total) > 0 && (
+                  <div className="flex justify-between text-brand-600 font-semibold">
+                    <span>Servicios adicionales:</span>
+                    <span>+${Number(paymentModalData.extras_total).toLocaleString('es-CO')} COP</span>
+                  </div>
+                )}
+                <div className="border-t border-slate-200 dark:border-slate-700 pt-1 flex justify-between font-extrabold text-sm text-slate-900 dark:text-slate-50">
+                  <span>Total a Cobrar:</span>
+                  <span className="text-brand-700">
+                    ${((isLegacyUSD(paymentModalData.final_total) ? paymentModalData.final_total * 4000 : Number(paymentModalData.final_total || 0)) + Number(paymentModalData.extras_total || 0)).toLocaleString('es-CO')} COP
+                  </span>
+                </div>
+              </div>
 
               <form onSubmit={handlePaymentSubmit} className="space-y-4">
                 <div>
