@@ -20,7 +20,7 @@ if backend_dir not in sys.path:
 
 # Ensure Supabase PostgreSQL cloud database URL with sslmode=require
 if not os.environ.get("DATABASE_URL"):
-    os.environ["DATABASE_URL"] = "postgresql://postgres.cgsaxlgifvlozglwnfsz:Luissan.ti0820@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require"
+    os.environ["DATABASE_URL"] = "postgresql://postgres.rfbkuhketoompobodvnq:123.456.789.@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
 
 _import_error = None
 

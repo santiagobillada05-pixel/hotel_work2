@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     """Configuration settings for HotelWork backend."""
     APP_NAME: str = "HotelWork"
     DEBUG: bool = False
-    DATABASE_URL: str = "postgresql://postgres.cgsaxlgifvlozglwnfsz:Luissan.ti0820@aws-0-us-east-1.pooler.supabase.com:5432/postgres?sslmode=require"
+    DATABASE_URL: str = "postgresql://postgres.rfbkuhketoompobodvnq:123.456.789.@aws-0-us-east-1.pooler.supabase.com:6543/postgres?sslmode=require"
     SECRET_KEY: str = "hotelwork-super-secret-jwt-key-2025-change-in-production-secure"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
