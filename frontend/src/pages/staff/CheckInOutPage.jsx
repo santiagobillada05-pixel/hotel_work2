@@ -59,9 +59,9 @@ export default function CheckInOutPage() {
     try {
       await reservationsApi.checkIn(id);
       await fetchReservations();
-      alert('Check-in realizado exitosamente');
+      alert('Registro de entrada realizado exitosamente');
     } catch (err) {
-      alert(err.message || 'Error al realizar Check-in');
+      alert(err.message || 'Error al registrar entrada');
     } finally {
       setActionLoading(null);
     }
@@ -146,7 +146,7 @@ export default function CheckInOutPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-900 dark:text-slate-50 tracking-tight flex items-center gap-2.5">
               <ClipboardList className="w-7 h-7 text-brand-600" />
-              Recepción: Check-in, Check-out & Pagos
+              Recepción: Registro de Entrada, Check-out & Pagos
             </h1>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
               Control de estancia de huéspedes en recepción.
@@ -216,7 +216,7 @@ export default function CheckInOutPage() {
                           </td>
 
                           <td className="py-4 px-6 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                            <div>Check-in: {res.check_in_date}</div>
+                            <div>Entrada: {res.check_in_date}</div>
                             <div>Check-out: {res.check_out_date}</div>
                           </td>
 
@@ -241,7 +241,7 @@ export default function CheckInOutPage() {
                                   : 'bg-rose-50 text-rose-700'
                               }`}
                             >
-                              {res.status === 'confirmed' ? 'CONFIRMADA' : res.status === 'checked_in' ? 'CHECK-IN' : res.status.toUpperCase()}
+                              {res.status === 'confirmed' ? 'CONFIRMADA' : res.status === 'checked_in' ? 'EN EL HOTEL' : res.status.toUpperCase()}
                             </span>
                           </td>
 
@@ -254,7 +254,7 @@ export default function CheckInOutPage() {
                                 className="inline-flex items-center gap-1 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all disabled:opacity-50"
                               >
                                 <LogIn className="w-3.5 h-3.5" />
-                                Check-in
+                                Registrar Entrada
                               </button>
                             )}
 

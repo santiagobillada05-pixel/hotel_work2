@@ -154,9 +154,12 @@ export default function WelcomeModal({ onClose }) {
           </div>
 
           {/* Note */}
-          <div className="bg-slate-50 dark:bg-slate-700/40 rounded-2xl p-4 border border-slate-200 dark:border-slate-700/50 text-center">
-            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-              💳 <strong>No se realiza pago en línea.</strong> El total (habitación + servicios elegidos) se paga directamente en el hotel al momento del check-in.
+          <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800/40 text-center space-y-1">
+            <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+              💳 Pago Únicamente en el Hotel
+            </p>
+            <p className="text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed">
+              No se realiza ningún cobro en la página web. El total (habitación + servicios elegidos) se paga directamente en el establecimiento al momento del registro de entrada (llegada), ya sea por transferencia, tarjeta o efectivo.
             </p>
           </div>
         </div>

@@ -14,7 +14,8 @@ import {
   Receipt,
   Clock,
   Info,
-  ShoppingBag
+  ShoppingBag,
+  CreditCard
 } from 'lucide-react';
 
 export default function ReservationModal({ room, initialCheckIn, initialCheckOut, onClose, onSuccess }) {
@@ -160,7 +161,7 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                     Importante: Confirmación Requerida
                   </p>
                   <p>
-                    Debes confirmar que asistirás <strong>1 día antes del check-in</strong> (o a más tardar <strong>4 horas antes</strong> de la hora prevista) desde la pestaña <strong>"Mis Reservas"</strong>.
+                    Debes confirmar que asistirás <strong>1 día antes de tu fecha de entrada / llegada</strong> (o a más tardar <strong>4 horas antes</strong> de la hora prevista) desde la pestaña <strong>"Mis Reservas"</strong>.
                   </p>
                   <p className="text-[11px] font-semibold text-rose-700 dark:text-rose-400">
                     Si no confirmas a tiempo, la reserva se cancelará automáticamente.
@@ -210,8 +211,16 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
               </div>
 
               {/* Payment note */}
-              <div className="p-3.5 bg-slate-50 dark:bg-slate-700/40 border border-slate-200 dark:border-slate-700/50 rounded-xl text-xs text-slate-600 dark:text-slate-300 text-center">
-                💳 <strong>Recuerda:</strong> No se realiza pago en línea. El total se paga directamente en el hotel.
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed text-center space-y-1">
+                <p className="font-extrabold text-sm flex items-center justify-center gap-1.5 text-emerald-800 dark:text-emerald-300">
+                  <span>💳 Pago Únicamente en el Hotel</span>
+                </p>
+                <p>
+                  No se realiza ningún cobro en la página web. El valor total se cancela directamente en la recepción del hotel <strong>al momento del registro de entrada (llegada)</strong>.
+                </p>
+                <p className="font-semibold text-emerald-700 dark:text-emerald-400 text-[11px]">
+                  Medios de pago aceptados: Transferencia bancaria, Tarjeta de crédito/débito o Efectivo.
+                </p>
               </div>
 
               <div className="flex gap-3">
@@ -359,11 +368,27 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                     La reserva quedará en estado <strong>Pendiente</strong>:
                   </p>
                   <ul className="list-disc list-inside space-y-0.5 pl-1 opacity-95">
-                    <li>Debes confirmar tu asistencia <strong>1 día antes</strong> del check-in en <em>"Mis Reservas"</em>.</li>
-                    <li>O como plazo máximo hasta <strong>4 horas antes</strong> de la hora de llegada.</li>
+                    <li>Debes confirmar tu asistencia <strong>1 día antes de tu fecha de entrada</strong> en <em>"Mis Reservas"</em>.</li>
+                    <li>O como plazo máximo hasta <strong>4 horas antes</strong> de la hora de llegada prevista.</li>
                   </ul>
                   <p className="text-[11px] font-semibold text-rose-700 dark:text-rose-400 pt-0.5">
                     * Si no confirmas a tiempo, el sistema cancelará la reserva automáticamente.
+                  </p>
+                </div>
+              </div>
+
+              {/* Important payment notice at reservation time */}
+              <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/40 rounded-2xl flex items-start gap-3">
+                <CreditCard className="w-5 h-5 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+                <div className="text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed space-y-1">
+                  <p className="font-bold text-emerald-950 dark:text-emerald-100 flex items-center gap-1.5">
+                    <span>💳 Pago Únicamente en el Hotel</span>
+                  </p>
+                  <p>
+                    <strong>No pagas nada ahora en la web.</strong> El valor total de tu habitación y servicios seleccionados se cancela directamente en la recepción del hotel <strong>al momento de hacer tu registro de entrada (llegada)</strong>.
+                  </p>
+                  <p className="text-[11px] font-semibold text-emerald-800 dark:text-emerald-300">
+                    Aceptamos: Transferencia bancaria, Tarjetas de crédito/débito o Efectivo.
                   </p>
                 </div>
               </div>

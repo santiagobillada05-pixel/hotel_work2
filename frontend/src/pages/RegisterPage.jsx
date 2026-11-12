@@ -352,10 +352,10 @@ export default function RegisterPage() {
 
               <div>
                 <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm mb-1">
-                  2. Identificación Obligatoria para Check-in
+                  2. Identificación Obligatoria para Registro de Entrada
                 </h4>
                 <p>
-                  Conforme a la regulación migratoria y hotelera colombiana, cada huésped debe presentar un documento de identidad original físico y válido (Cédula de Ciudadanía, Cédula de Extranjería o Pasaporte) al momento del check-in presencial en el establecimiento.
+                  Conforme a la regulación migratoria y hotelera colombiana, cada huésped debe presentar un documento de identidad original físico y válido (Cédula de Ciudadanía, Cédula de Extranjería o Pasaporte) al momento del registro de entrada presencial en el establecimiento.
                 </p>
               </div>
 

@@ -58,7 +58,7 @@ export default function MyReservationsPage() {
   };
 
   const handleConfirm = async (id) => {
-    if (!window.confirm('¿Confirmar esta reserva? Recuerda que el pago se realiza en el hotel.')) return;
+    if (!window.confirm('¿Confirmar esta reserva? Recuerda que el pago se realiza únicamente en el hotel al momento de tu llegada (transferencia bancaria, tarjeta o efectivo).')) return;
     setConfirmingId(id);
     try {
       await reservationsApi.confirmReservation(id);
@@ -125,7 +125,7 @@ export default function MyReservationsPage() {
             <div>
               <p className="text-sm font-bold text-amber-800">Tienes reservas pendientes de confirmar</p>
               <p className="text-xs text-amber-700 mt-0.5">
-                Reservas sin confirmar serán canceladas automáticamente si no se confirman un día antes del check-in.
+                Reservas sin confirmar serán canceladas automáticamente si no se confirman un día antes de la fecha de entrada.
               </p>
             </div>
           </div>
@@ -243,6 +243,9 @@ export default function MyReservationsPage() {
                           </>
                         )}
                         <span className="text-xs text-slate-400 block">IVA 19% incl.</span>
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-semibold mt-0.5">
+                          Pago al llegar al hotel: Tarjeta, Transferencia o Efectivo
+                        </span>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 justify-end">

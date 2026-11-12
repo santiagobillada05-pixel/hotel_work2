@@ -190,7 +190,7 @@ def check_confirmations(
                     db=db,
                     user_id=reservation.user_id,
                     title="Reserva Cancelada Automáticamente",
-                    message=f"Tu reserva #{reservation.id} para el {reservation.check_in_date} fue cancelada por no ser confirmada a tiempo (menos de {auto_cancel_threshold_hours} horas antes del check-in).",
+                    message=f"Tu reserva #{reservation.id} para el {reservation.check_in_date} fue cancelada por no ser confirmada a tiempo (menos de {auto_cancel_threshold_hours} horas antes de la hora de entrada).",
                     notification_type=NotificationType.cancellation,
                     reservation_id=reservation.id,
                 )
@@ -377,14 +377,14 @@ def check_in_guest(
     send_notification(
         db=db,
         user_id=reservation.user_id,
-        title="Check-in Realizado",
-        message=f"¡Bienvenido! Has realizado check-in en la habitación {room.room_number}.",
+        title="Registro de Entrada Realizado",
+        message=f"¡Bienvenido! Has realizado el registro de entrada en la habitación {room.room_number}.",
         notification_type=NotificationType.general,
         reservation_id=reservation.id,
     )
 
     data = ReservationResponse.model_validate(reservation).model_dump()
-    return success_response(data=data, message="Check-in realizado exitosamente")
+    return success_response(data=data, message="Registro de entrada realizado exitosamente")
 
 
 @router.patch("/{id}/check-out", response_model=dict)

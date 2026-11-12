@@ -27,7 +27,7 @@ export default function TermsPage() {
     { id: 'identificacion', title: '1. Identificación y Marco Legal', icon: Scale },
     { id: 'tarificacion', title: '2. Tarifas en Pesos Colombianos (COP) e IVA', icon: DollarSign },
     { id: 'reservas', title: '3. Proceso de Reserva y Medios de Pago', icon: CreditCard },
-    { id: 'checkin', title: '4. Check-in, Check-out y Registro Hotelero', icon: CalendarCheck },
+    { id: 'checkin', title: '4. Registro de Entrada, Check-out y Registro Hotelero', icon: CalendarCheck },
     { id: 'cancelaciones', title: '5. Cancelaciones, Retracto y No-Show', icon: FileText },
     { id: 'habeasdata', title: '6. Protección de Datos (Ley 1581 de 2012)', icon: Lock },
     { id: 'convivencia', title: '7. Convivencia y Espacio Libre de Humo', icon: CheckCircle },
@@ -244,13 +244,13 @@ export default function TermsPage() {
                   <CalendarCheck className="w-5 h-5" />
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-50">
-                  4. Check-in, Check-out y Registro Hotelero
+                  4. Registro de Entrada, Check-out y Registro Hotelero
                 </h2>
               </div>
               <div className="text-sm text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
                 <ul className="list-disc pl-5 space-y-2">
                   <li>
-                    <strong>Horario de Check-in:</strong> A partir de las <strong>3:00 PM</strong>.
+                    <strong>Horario de Entrada:</strong> A partir de las <strong>3:00 PM</strong>.
                   </li>
                   <li>
                     <strong>Horario de Check-out:</strong> Hasta las <strong>11:00 AM</strong>. Salidas posteriores sin autorización previa estarán sujetas a cobro de media tarifa o tarifa completa de una noche.
@@ -274,7 +274,7 @@ export default function TermsPage() {
               </div>
               <div className="text-sm text-slate-600 dark:text-slate-300 space-y-3 leading-relaxed">
                 <p>
-                  <strong>Cancelación Estándar:</strong> El huésped puede cancelar su reserva sin penalidad si notifica formalmente a través del sistema con al menos <strong>24 horas de anticipación</strong> a la fecha fijada de check-in.
+                  <strong>Cancelación Estándar:</strong> El huésped puede cancelar su reserva sin penalidad si notifica formalmente a través del sistema con al menos <strong>24 horas de anticipación</strong> a la fecha fijada de entrada.
                 </p>
                 <p>
                   <strong>No-Show (No Presentación):</strong> En caso de que el huésped no se presente el día previsto sin notificación previa oportuna, se cobrará una penalidad equivalente al valor de la primera noche de hospedaje en concepto de indemnización por retención de inventario.
@@ -303,7 +303,7 @@ export default function TermsPage() {
                   <strong>Finalidades del tratamiento:</strong>
                 </p>
                 <ul className="list-disc pl-5 space-y-1.5 text-xs text-slate-700 dark:text-slate-300">
-                  <li>Gestión operativa de reservas, check-in, check-out y facturación electrónica DIAN.</li>
+                  <li>Gestión operativa de reservas, registro de entrada, check-out y facturación electrónica DIAN.</li>
                   <li>Envío de confirmaciones, comprobantes de pago y notificaciones sobre el estado de la estadía.</li>
                   <li>Cumplimiento de obligaciones ante Migración Colombia y la Policía Nacional (Tarjeta de Registro de Alojamiento - TRA).</li>
                 </ul>

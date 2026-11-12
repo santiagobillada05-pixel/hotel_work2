@@ -169,7 +169,7 @@ export default function Navbar() {
                   className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
                 >
                   <ClipboardList className="w-4 h-4" />
-                  Recepción & Check-in
+                  Recepción & Entrada
                 </Link>
                 <Link
                   to="/pagados"
@@ -295,7 +295,7 @@ export default function Navbar() {
             )}
             {isAuthenticated && user?.role === 'staff' && (
               <>
-                <Link to="/check-in-out" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Recepción & Check-in</Link>
+                <Link to="/check-in-out" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Recepción & Entrada</Link>
                 <Link to="/pagados" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Lista Pagados / Conteo</Link>
                 <Link to="/recaudacion" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Recaudación</Link>
                 <Link to="/manual" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Manual</Link>

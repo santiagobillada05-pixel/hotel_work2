@@ -112,10 +112,10 @@ export default function RoomsPage() {
         {/* Search & Filter Box */}
         <div className="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-10">
           <form onSubmit={handleSearchSubmit} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-            {/* Check-in */}
+            {/* Fecha de Entrada */}
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-brand-600" /> Check-in
+                <Calendar className="w-3.5 h-3.5 text-brand-600" /> Fecha de Entrada
               </label>
               <input
                 type="date"

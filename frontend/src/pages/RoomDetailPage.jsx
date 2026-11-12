@@ -246,7 +246,7 @@ export default function RoomDetailPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs text-slate-600 dark:text-slate-300">
                   <div className="flex items-center gap-2.5">
                     <Clock className="w-4 h-4 text-brand-600 shrink-0" />
-                    <span>Check-in a partir de las 15:00 hrs</span>
+                    <span>Entrada a partir de las 15:00 hrs</span>
                   </div>
                   <div className="flex items-center gap-2.5">
                     <Clock className="w-4 h-4 text-brand-600 shrink-0" />
@@ -320,7 +320,7 @@ export default function RoomDetailPage() {
                   <div className="space-y-3">
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
-                        Entrada (Check-in)
+                        Fecha de Entrada
                       </label>
                       <input
                         type="date"
