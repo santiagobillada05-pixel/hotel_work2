@@ -142,13 +142,17 @@ GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role
 -- SEED DATA: DATOS INICIALES DEL HOTEL
 -- ============================================================
 
--- 1. USUARIOS INICIALES (Contraseña de admin: Luissanti0820)
--- Hash bcrypt seguro generado para Luissanti0820
+-- 1. USUARIOS DEMO Y ADMINISTRADOR
+-- Admin: admin@hotelwork.com / Admin1234!
+-- Staff: staff@hotelwork.com / Staff1234!
+-- Huésped: guest@hotelwork.com / Guest1234!
+-- Santiago: agudelosantiago.inedan@gmail.com / Luissanti0820
 INSERT INTO public.users (email, hashed_password, first_name, last_name, phone, document_id, role, is_active)
 VALUES 
-('agudelosantiago.inedan@gmail.com', '$2b$10$WCyvNw5YmrkUbEttnK52m.lKbmdM22FX0rOMMFvAI5dvvD//cvi1q', 'Santiago', 'Agudelo', '3043900445', '1056777565', 'admin', true),
-('staff@hotelwork.com', '$2b$10$WCyvNw5YmrkUbEttnK52m.lKbmdM22FX0rOMMFvAI5dvvD//cvi1q', 'Carlos', 'Recepción', '3001234567', '987654321', 'staff', true),
-('huesped@hotelwork.com', '$2b$10$WCyvNw5YmrkUbEttnK52m.lKbmdM22FX0rOMMFvAI5dvvD//cvi1q', 'Ana', 'Gómez', '3109876543', '123456789', 'guest', true)
+('admin@hotelwork.com', '$2b$10$R6CcPvRW.AeGGgGPXhwQt./t1AQcrcVL.nVcxGfLrRizBvpdnGd7u', 'Administrador', 'HotelWork', '3000000001', '1000000001', 'admin', true),
+('staff@hotelwork.com', '$2b$10$FKmJcaNbPfyFO97ZTOHM0u3FJ3BgKqpAYYbdKJB8kRSYWUd5jMboO', 'Carlos', 'Recepción', '3000000002', '1000000002', 'staff', true),
+('guest@hotelwork.com', '$2b$10$hBalXYu5FfT/pf/a0Jdio.rOkFqNsjD1OtIhfssfsaC2i6dGkD4UK', 'Huésped', 'Demo', '3000000003', '1000000003', 'guest', true),
+('agudelosantiago.inedan@gmail.com', '$2b$10$WCyvNw5YmrkUbEttnK52m.lKbmdM22FX0rOMMFvAI5dvvD//cvi1q', 'Santiago', 'Agudelo', '3043900445', '1056777565', 'admin', true)
 ON CONFLICT (email) DO NOTHING;
 
 -- 2. HABITACIONES (8 Habitaciones con tarifas en COP y fotos reales)

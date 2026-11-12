@@ -117,6 +117,36 @@ export default function LoginPage() {
           </button>
         </form>
 
+        {/* Cuentas de Demostración */}
+        <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3 text-center flex items-center justify-center gap-1.5">
+            <KeyRound className="w-3.5 h-3.5 text-brand-600" /> Cuentas de Demostración (1 Clic)
+          </p>
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('admin@hotelwork.com', 'Admin1234!')}
+              className="text-xs font-bold py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-brand-50 hover:border-brand-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all text-center shadow-sm"
+            >
+              👑 Admin
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('staff@hotelwork.com', 'Staff1234!')}
+              className="text-xs font-bold py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-brand-50 hover:border-brand-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all text-center shadow-sm"
+            >
+              💼 Staff
+            </button>
+            <button
+              type="button"
+              onClick={() => handleQuickLogin('guest@hotelwork.com', 'Guest1234!')}
+              className="text-xs font-bold py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-brand-50 hover:border-brand-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all text-center shadow-sm"
+            >
+              🧳 Huésped
+            </button>
+          </div>
+        </div>
+
         <div className="text-center mt-6">
           <p className="text-xs text-slate-500 dark:text-slate-400">
             ¿No tienes cuenta?{' '}
