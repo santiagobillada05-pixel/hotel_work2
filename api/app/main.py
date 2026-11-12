@@ -62,7 +62,24 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     """Agrega cabeceras HTTP de seguridad para mitigar clickjacking, MIME-sniffing y XSS."""
-    response = await call_next(request)
+    try:
+        response = await call_next(request)
+    except Exception as exc:
+        import traceback
+        return JSONResponse(
+            status_code=500,
+            headers={
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods": "*",
+                "Access-Control-Allow-Headers": "*",
+            },
+            content={
+                "success": False,
+                "message": f"Error interno: {str(exc)}",
+                "detail": traceback.format_exc(),
+                "error_code": "INTERNAL_SERVER_ERROR",
+            }
+        )
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"

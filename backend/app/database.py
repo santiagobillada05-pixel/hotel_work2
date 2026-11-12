@@ -39,22 +39,30 @@ if database_url.startswith("sqlite") and os.path.exists(volume_dir):
         except Exception as e:
             print(f"[database] Error copiando la base de datos al volumen: {e}")
 
-engine_kwargs = {}
-if database_url.startswith("sqlite"):
-    engine_kwargs["connect_args"] = {"check_same_thread": False}
-else:
-    # Pool settings para bases de datos cliente-servidor (PostgreSQL/Supabase, MySQL)
-    engine_kwargs["pool_pre_ping"] = True
-    engine_kwargs["pool_recycle"] = 300
-
-try:
-    engine = create_engine(database_url, **engine_kwargs)
-except Exception:
-    if "postgresql" in database_url and "+pg8000" not in database_url:
-        fallback_url = database_url.replace("postgresql://", "postgresql+pg8000://", 1)
-        engine = create_engine(fallback_url, **engine_kwargs)
-    else:
+def _create_working_engine():
+    kwargs = {}
+    if database_url.startswith("sqlite"):
+        kwargs["connect_args"] = {"check_same_thread": False}
+        return create_engine(database_url, **kwargs)
+    
+    kwargs["pool_pre_ping"] = True
+    kwargs["pool_recycle"] = 300
+    
+    # Intento 1: psycopg2
+    try:
+        eng = create_engine(database_url, **kwargs)
+        with eng.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        return eng
+    except Exception as e:
+        print(f"[database] Primary engine failed ({e}), attempting pg8000 fallback...")
+        if "postgresql" in database_url and "+pg8000" not in database_url:
+            fallback_url = database_url.replace("postgresql://", "postgresql+pg8000://", 1)
+            eng = create_engine(fallback_url, **kwargs)
+            return eng
         raise
+
+engine = _create_working_engine()
 
 @event.listens_for(engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
