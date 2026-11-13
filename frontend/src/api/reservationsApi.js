@@ -404,7 +404,7 @@ export const reservationsApi = {
         .single();
       if (error) throw error;
       if (res.room_id) {
-        await supabase.from('rooms').update({ status: 'cleaning' }).eq('id', res.room_id);
+        await supabase.from('rooms').update({ status: 'available' }).eq('id', res.room_id);
       }
 
       // Registrar en checkout_records para que figure en la Lista de Pagados / Arqueo

@@ -24,7 +24,6 @@ export const reportsApi = {
       const totalRooms = allRooms.length;
       const occupiedRooms = allRooms.filter((r) => r.status === 'occupied').length;
       const availableRooms = allRooms.filter((r) => r.status === 'available').length;
-      const maintenanceRooms = allRooms.filter((r) => r.status === 'maintenance' || r.status === 'cleaning').length;
 
       const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
 
@@ -55,7 +54,6 @@ export const reportsApi = {
           room_status_breakdown: [
             { name: 'Disponibles', value: availableRooms, color: '#10B981' },
             { name: 'Ocupadas', value: occupiedRooms, color: '#3B82F6' },
-            { name: 'En Limpieza / Mantenimiento', value: maintenanceRooms, color: '#F59E0B' },
           ],
         },
       };
