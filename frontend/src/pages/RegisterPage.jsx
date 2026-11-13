@@ -188,7 +188,7 @@ export default function RegisterPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1.5">
-                Teléfono (Solo Números)
+                Teléfono
               </label>
               <div className="relative">
                 <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
@@ -207,7 +207,7 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1.5">
-                Cédula / Documento (Solo Números)
+                Documento de Identidad
               </label>
               <div className="relative">
                 <CreditCard className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />

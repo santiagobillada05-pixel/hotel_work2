@@ -299,7 +299,7 @@ export default function ManageRoomsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
-                      Número (Solo Números)
+                      Número
                     </label>
                     <input
                       type="text"
@@ -333,7 +333,7 @@ export default function ManageRoomsPage() {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
-                      Tarifa (Solo Números)
+                      Tarifa
                     </label>
                     <div className="flex gap-2">
                       <input
@@ -354,7 +354,7 @@ export default function ManageRoomsPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
-                      Capacidad (Solo Números)
+                      Capacidad
                     </label>
                     <input
                       type="text"
@@ -370,7 +370,7 @@ export default function ManageRoomsPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
-                      Piso (Solo Números)
+                      Piso
                     </label>
                     <input
                       type="text"

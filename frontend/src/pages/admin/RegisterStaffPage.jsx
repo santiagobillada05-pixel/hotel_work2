@@ -155,7 +155,7 @@ export default function RegisterStaffPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Teléfono (Solo Números)</label>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Teléfono</label>
               <input
                 type="tel"
                 inputMode="numeric"
@@ -169,7 +169,7 @@ export default function RegisterStaffPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Cédula / Documento (Solo Números)</label>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Documento de Identidad</label>
               <input
                 type="text"
                 inputMode="numeric"
