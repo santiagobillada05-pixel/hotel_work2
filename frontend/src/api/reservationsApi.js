@@ -1,23 +1,74 @@
 import { supabase } from '../lib/supabaseClient';
 import api from './client';
 
+export const parseArrivalTimeToHourMinute = (timeStr) => {
+  if (!timeStr) return { hours: 15, minutes: 0, label: '15:00' };
+  const str = String(timeStr).trim();
+
+  // Caso formato 12 horas: "3:00 PM", "12:00 PM", "10:30 AM", "3:00 PM (Check-in estándar)"
+  const match12 = str.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+  if (match12) {
+    let h = parseInt(match12[1], 10);
+    const m = parseInt(match12[2], 10);
+    const meridian = match12[3].toUpperCase();
+    if (meridian === 'PM' && h < 12) h += 12;
+    if (meridian === 'AM' && h === 12) h = 0;
+    return { 
+      hours: h, 
+      minutes: m, 
+      label: `${match12[1]}:${match12[2]} ${meridian}` 
+    };
+  }
+
+  // Caso formato 24 horas: "15:00", "14:30"
+  const match24 = str.match(/(\d{1,2}):(\d{2})/);
+  if (match24) {
+    const h = parseInt(match24[1], 10);
+    const m = parseInt(match24[2], 10);
+    const meridian = h >= 12 ? 'PM' : 'AM';
+    const h12 = h % 12 === 0 ? 12 : h % 12;
+    return { 
+      hours: h, 
+      minutes: m, 
+      label: `${h12}:${m < 10 ? '0' : ''}${m} ${meridian}` 
+    };
+  }
+
+  if (str.toLowerCase().includes('madrugada')) {
+    return { hours: 3, minutes: 0, label: '3:00 AM' };
+  }
+
+  return { hours: 15, minutes: 0, label: '3:00 PM' };
+};
+
+export const getReservationDeadline = (checkInDateStr, arrivalTimeStr) => {
+  if (!checkInDateStr) return null;
+  const [cY, cM, cD] = checkInDateStr.split('-').map(Number);
+  const timeInfo = parseArrivalTimeToHourMinute(arrivalTimeStr);
+
+  // Fecha y hora exacta de check-in
+  const checkInDateTime = new Date(cY, cM - 1, cD, timeInfo.hours, timeInfo.minutes, 0, 0);
+
+  // Plazo límite: exactamente 24 horas antes de la hora de llegada
+  const deadlineDateTime = new Date(checkInDateTime.getTime() - 24 * 60 * 60 * 1000);
+
+  return {
+    checkInDateTime,
+    deadlineDateTime,
+    timeLabel: timeInfo.label,
+  };
+};
+
 export const autoCancelExpiredReservations = async (reservations = []) => {
   if (!reservations || reservations.length === 0) return reservations;
   
   const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
   const expiredIds = [];
 
   for (const r of reservations) {
     if (r.status === 'pending' && r.check_in_date) {
-      const [cY, cM, cD] = r.check_in_date.split('-').map(Number);
-      const checkIn = new Date(cY, cM - 1, cD);
-      const diffDays = Math.round((checkIn - today) / (1000 * 60 * 60 * 24));
-      
-      // If check-in date is today or has passed (diffDays <= 0) and status is still pending:
-      // it was not confirmed at least 1 day before -> auto-cancel!
-      if (diffDays <= 0) {
+      const deadlineInfo = getReservationDeadline(r.check_in_date, r.estimated_arrival_time);
+      if (deadlineInfo && now.getTime() >= deadlineInfo.deadlineDateTime.getTime()) {
         expiredIds.push(r.id);
       }
     }
@@ -30,14 +81,15 @@ export const autoCancelExpiredReservations = async (reservations = []) => {
         .update({ status: 'cancelled' })
         .in('id', expiredIds);
 
-      // Create notifications for the affected reservations
+      // Notificaciones de cancelación protocolaria
       for (const id of expiredIds) {
         const res = reservations.find((item) => item.id === id);
         if (res && res.user_id) {
+          const timeInfo = parseArrivalTimeToHourMinute(res.estimated_arrival_time);
           await supabase.from('notifications').insert({
             user_id: res.user_id,
-            title: 'Reserva Auto-Cancelada',
-            message: `Tu reserva #${res.id} para el ${res.check_in_date} fue cancelada automáticamente por no haber sido confirmada con al menos 1 día de anticipación.`,
+            title: `Reserva #${res.id} Cancelada por falta de confirmación`,
+            message: `Su reserva #${res.id} para el ${res.check_in_date} fue cancelada automáticamente debido a que el plazo límite de confirmación (24 horas antes de su hora de llegada: ${timeInfo.label}) expiró sin confirmación de asistencia.`,
             type: 'cancellation',
             is_read: false,
           });
@@ -394,6 +446,12 @@ export const reservationsApi = {
         .eq('id', id)
         .single();
       if (eErr) throw eErr;
+
+      // Validación: la hora de llegada es de registro único por reservación
+      const existingMatch = existing?.special_requests?.match(/\[Llegada estimada:\s*([^\]]+)\]/i);
+      if (existingMatch && existingMatch[1] && existingMatch[1].trim()) {
+        throw new Error('La hora estimada de llegada ya fue registrada para esta reserva y es de carácter definitivo.');
+      }
 
       const baseRequests = (existing?.special_requests || '')
         .replace(/\[Llegada estimada:[^\]]+\]\s*/gi, '')

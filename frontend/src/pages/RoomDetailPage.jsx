@@ -395,7 +395,7 @@ export default function RoomDetailPage() {
                     <div>
                       <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-1.5">
                         <Clock className="w-3.5 h-3.5 text-brand-600" />
-                        Hora Estimada de Llegada
+                        Hora de Llegada (Registro Único y Definitivo)
                       </label>
                       <select
                         value={arrivalTime}
@@ -416,6 +416,9 @@ export default function RoomDetailPage() {
                         <option value="11:00 PM">11:00 PM (Llegada tardía)</option>
                         <option value="Madrugada (12:00 AM - 5:00 AM)">Madrugada (12:00 AM - 5:00 AM)</option>
                       </select>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 block mt-1 leading-tight">
+                        Fija su plazo límite de confirmación (24 horas antes de dicha hora). Solo puede elegirse una única vez.
+                      </span>
                     </div>
 
                     <div>

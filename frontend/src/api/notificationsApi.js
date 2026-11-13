@@ -1,5 +1,6 @@
 import { supabase } from '../lib/supabaseClient';
 import api from './client';
+import { getReservationDeadline } from './reservationsApi';
 
 // Generador de notificaciones inteligentes basadas en las reservas del huésped
 const generateSmartReservationNotifications = async (userId) => {
@@ -7,15 +8,13 @@ const generateSmartReservationNotifications = async (userId) => {
   try {
     const { data: reservations, error } = await supabase
       .from('reservations')
-      .select('id, user_id, check_in_date, check_out_date, status, room:rooms(room_number, room_type)')
+      .select('id, user_id, check_in_date, check_out_date, status, special_requests, room:rooms(room_number, room_type)')
       .eq('user_id', userId)
       .in('status', ['pending', 'confirmed']);
 
     if (error || !reservations || reservations.length === 0) return;
 
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const currentHour = now.getHours();
 
     // Obtener notificaciones existentes para evitar duplicar las de hoy
     const { data: existingNotifs } = await supabase
@@ -27,54 +26,64 @@ const generateSmartReservationNotifications = async (userId) => {
 
     for (const r of reservations) {
       if (!r.check_in_date) continue;
-      const [cY, cM, cD] = r.check_in_date.split('-').map(Number);
-      const checkIn = new Date(cY, cM - 1, cD);
-      const daysUntilArrival = Math.round((checkIn - today) / (1000 * 60 * 60 * 24));
 
-      // Plazo límite: 1 día antes del check-in
-      const deadlineDate = new Date(checkIn);
-      deadlineDate.setDate(deadlineDate.getDate() - 1);
-      const daysToConfirm = Math.round((deadlineDate - today) / (1000 * 60 * 60 * 24));
+      const arrivalMatch = r.special_requests?.match(/\[Llegada estimada:\s*([^\]]+)\]/i);
+      const estimatedArrivalTime = arrivalMatch ? arrivalMatch[1].trim() : null;
 
-      const roomLabel = r.room?.room_number ? `Habitación ${r.room.room_number}` : 'tu habitación';
+      const deadlineInfo = getReservationDeadline(r.check_in_date, estimatedArrivalTime);
+      if (!deadlineInfo) continue;
+
+      const { checkInDateTime, deadlineDateTime, timeLabel } = deadlineInfo;
+      const diffMs = deadlineDateTime.getTime() - now.getTime();
+      const totalHoursRemaining = Math.floor(diffMs / (1000 * 60 * 60));
+
+      const deadlineFormatted = deadlineDateTime.toLocaleDateString('es-CO', {
+        day: 'numeric',
+        month: 'long',
+      });
+
+      const checkInFormatted = checkInDateTime.toLocaleDateString('es-CO', {
+        day: 'numeric',
+        month: 'long',
+      });
+
+      const roomLabel = r.room?.room_number ? `Habitación ${r.room.room_number}` : 'su habitación';
 
       // 1. Huésped con reserva PENDIENTE
       if (r.status === 'pending') {
-        if (daysToConfirm === 0) {
-          // Hoy es el último día para confirmar (la entrada es mañana)
-          if (currentHour >= 20) {
-            // Menos de 4 horas para la medianoche
-            const title = `Plazo de confirmación por vencer: Reserva #${r.id}`;
-            if (!existingTitles.has(title)) {
-              await supabase.from('notifications').insert({
-                user_id: userId,
-                title,
-                message: `Su llegada a ${roomLabel} está programada para mañana (${r.check_in_date}). Le recordamos confirmar su asistencia antes de la medianoche para mantener activa su reserva.`,
-                type: 'cancellation',
-                is_read: false,
-              });
-              existingTitles.add(title);
-            }
-          } else {
-            const title = `Último día para confirmar su reserva #${r.id}`;
-            if (!existingTitles.has(title)) {
-              await supabase.from('notifications').insert({
-                user_id: userId,
-                title,
-                message: `Su llegada a ${roomLabel} está programada para mañana (${r.check_in_date}). Por favor confirme su asistencia antes de finalizar el día para garantizar su habitación.`,
-                type: 'warning',
-                is_read: false,
-              });
-              existingTitles.add(title);
-            }
+        if (diffMs > 0 && totalHoursRemaining < 4) {
+          // Menos de 4 horas exactas para el vencimiento del plazo límite
+          const title = `Plazo urgente: Menos de 4 horas para confirmar su reserva #${r.id}`;
+          if (!existingTitles.has(title)) {
+            await supabase.from('notifications').insert({
+              user_id: userId,
+              title,
+              message: `Su llegada a ${roomLabel} está programada para las ${timeLabel} del ${checkInFormatted}. Le recordamos que dispone de menos de 4 horas (plazo límite: hoy a las ${timeLabel}) para confirmar su asistencia antes de que se cancele automáticamente.`,
+              type: 'cancellation',
+              is_read: false,
+            });
+            existingTitles.add(title);
           }
-        } else if (daysToConfirm === 1) {
+        } else if (diffMs > 0 && totalHoursRemaining < 24) {
+          // Menos de 24 horas (mismo día de deadline, e.g. 5, 6, 12 horas restantes)
+          const title = `Plazo de confirmación: ${totalHoursRemaining} horas restantes (Reserva #${r.id})`;
+          if (!existingTitles.has(title)) {
+            await supabase.from('notifications').insert({
+              user_id: userId,
+              title,
+              message: `Dispone de ${totalHoursRemaining} horas para confirmar su asistencia para ${roomLabel}. Su plazo límite vence a las ${timeLabel} del ${deadlineFormatted} (24 horas antes de su llegada).`,
+              type: 'warning',
+              is_read: false,
+            });
+            existingTitles.add(title);
+          }
+        } else if (diffMs > 0 && totalHoursRemaining >= 24 && totalHoursRemaining <= 48) {
           const title = `Recordatorio de confirmación: Reserva #${r.id}`;
           if (!existingTitles.has(title)) {
             await supabase.from('notifications').insert({
               user_id: userId,
               title,
-              message: `Le recordamos confirmar su reserva para ${roomLabel}. Su llegada es el ${r.check_in_date} y su plazo de confirmación vence mañana.`,
+              message: `Le recordamos confirmar su asistencia para ${roomLabel}. Su plazo límite vence a las ${timeLabel} del ${deadlineFormatted}.`,
               type: 'info',
               is_read: false,
             });
@@ -85,25 +94,28 @@ const generateSmartReservationNotifications = async (userId) => {
 
       // 2. Huésped con reserva CONFIRMADA
       if (r.status === 'confirmed') {
-        if (daysUntilArrival === 1) {
+        const diffCheckInMs = checkInDateTime.getTime() - now.getTime();
+        const hoursToCheckIn = Math.floor(diffCheckInMs / (1000 * 60 * 60));
+
+        if (hoursToCheckIn > 0 && hoursToCheckIn <= 24) {
           const title = `Su estadía comienza mañana: Reserva #${r.id}`;
           if (!existingTitles.has(title)) {
             await supabase.from('notifications').insert({
               user_id: userId,
               title,
-              message: `Todo se encuentra listo para su llegada el día de mañana (${r.check_in_date}) a ${roomLabel}. El check-in inicia a las 15:00. El pago se procesa directamente en recepción.`,
+              message: `Todo se encuentra listo para su llegada a ${roomLabel} el ${checkInFormatted} a las ${timeLabel}. El pago se procesa directamente en recepción.`,
               type: 'confirmation',
               is_read: false,
             });
             existingTitles.add(title);
           }
-        } else if (daysUntilArrival === 0) {
+        } else if (hoursToCheckIn <= 0 && diffCheckInMs > -24 * 60 * 60 * 1000) {
           const title = `Bienvenido a HotelWork: Reserva #${r.id}`;
           if (!existingTitles.has(title)) {
             await supabase.from('notifications').insert({
               user_id: userId,
               title,
-              message: `Nos complace recibirle el día de hoy. Nuestro equipo de recepción le espera para hacerle entrega de ${roomLabel}.`,
+              message: `Nos complace recibirle el día de hoy. Nuestro equipo de recepción le espera a las ${timeLabel} para hacerle entrega de ${roomLabel}.`,
               type: 'confirmation',
               is_read: false,
             });

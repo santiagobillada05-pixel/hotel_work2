@@ -289,7 +289,7 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-200 mb-1.5 flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-brand-600" />
-                  Hora Estimada de Llegada al Hotel
+                  Hora Estimada de Llegada (Registro Único y Definitivo)
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <select
@@ -311,8 +311,8 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
                     <option value="11:00 PM">11:00 PM (Llegada tardía)</option>
                     <option value="Madrugada (12:00 AM - 5:00 AM)">Madrugada (12:00 AM - 5:00 AM)</option>
                   </select>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center bg-slate-50 dark:bg-slate-900/40 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700">
-                    Informa a recepción a qué hora llegarás para preparar tu llave.
+                  <div className="text-[11px] text-slate-600 dark:text-slate-400 flex items-center bg-slate-50 dark:bg-slate-900/40 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 leading-tight">
+                    Fija su plazo límite de confirmación (24 horas antes de dicha hora). Solo puede elegirse una única vez.
                   </div>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { reservationsApi } from '../api/reservationsApi';
+import { reservationsApi, getReservationDeadline } from '../api/reservationsApi';
 import { extrasApi } from '../api/extrasApi';
 import { 
   CalendarCheck, 
@@ -83,14 +83,19 @@ export default function MyReservationsPage() {
   const handleSaveArrivalTime = async (e) => {
     e.preventDefault();
     if (!editingArrivalReservation) return;
+    const confirmChoice = window.confirm(
+      `¿Desea registrar ${arrivalTimeInput} como su hora definitiva de llegada?\n\nRecuerde: Este registro es único y no podrá ser modificado. Su plazo límite de confirmación vencerá exactamente 24 horas antes de dicha hora.`
+    );
+    if (!confirmChoice) return;
+
     setUpdatingArrival(true);
     try {
       await reservationsApi.updateArrivalTime(editingArrivalReservation.id, arrivalTimeInput);
       setEditingArrivalReservation(null);
       await fetchMyReservations();
-      alert('Hora de llegada actualizada exitosamente. El personal de recepción ha sido notificado.');
+      alert('Hora de llegada registrada exitosamente de forma definitiva.');
     } catch (err) {
-      alert(err.message || 'Error al actualizar hora de llegada');
+      alert(err.message || 'Error al registrar hora de llegada');
     } finally {
       setUpdatingArrival(false);
     }
@@ -112,28 +117,28 @@ export default function MyReservationsPage() {
     );
   };
 
-  const getConfirmationInfo = (checkInDateStr) => {
+  const getConfirmationInfo = (checkInDateStr, arrivalTimeStr) => {
     if (!checkInDateStr) return null;
     const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const deadlineInfo = getReservationDeadline(checkInDateStr, arrivalTimeStr);
+    if (!deadlineInfo) return null;
 
-    const [cY, cM, cD] = checkInDateStr.split('-').map(Number);
-    const checkIn = new Date(cY, cM - 1, cD);
+    const { checkInDateTime, deadlineDateTime, timeLabel } = deadlineInfo;
+    const diffMs = deadlineDateTime.getTime() - now.getTime();
+    const isExpired = diffMs <= 0;
 
-    const daysUntilCheckIn = Math.round((checkIn - today) / (1000 * 60 * 60 * 24));
-    
-    // Plazo límite: exactamente 1 día antes del check-in
-    const deadlineDate = new Date(checkIn);
-    deadlineDate.setDate(deadlineDate.getDate() - 1);
-    
-    const daysToConfirm = Math.round((deadlineDate - today) / (1000 * 60 * 60 * 24));
+    const totalHoursRemaining = Math.floor(diffMs / (1000 * 60 * 60));
+    const totalMinutesRemaining = Math.floor(diffMs / (1000 * 60));
+    const remainingMinutes = Math.max(0, totalMinutesRemaining % 60);
+    const diffDays = Math.floor(totalHoursRemaining / 24);
+    const remainingHours = Math.max(0, totalHoursRemaining % 24);
 
-    const checkInFormatted = checkIn.toLocaleDateString('es-CO', {
+    const checkInFormatted = checkInDateTime.toLocaleDateString('es-CO', {
       day: 'numeric',
       month: 'long',
     });
 
-    const deadlineFormatted = deadlineDate.toLocaleDateString('es-CO', {
+    const deadlineFormatted = deadlineDateTime.toLocaleDateString('es-CO', {
       day: 'numeric',
       month: 'long',
     });
@@ -145,49 +150,53 @@ export default function MyReservationsPage() {
       badge: 'bg-blue-100 text-blue-800 border-blue-300',
     };
 
-    if (daysToConfirm < 0 || daysUntilCheckIn <= 0) {
+    if (isExpired) {
       style = {
         bg: 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40 text-rose-900 dark:text-rose-200',
         icon: 'text-rose-600 dark:text-rose-400',
         badge: 'bg-rose-100 text-rose-800 border-rose-300',
       };
-      message = 'Plazo de confirmación vencido: esta reserva no fue confirmada con al menos 1 día de anticipación y ha sido cancelada automáticamente.';
-    } else if (daysToConfirm === 0) {
-      const isUrgentHours = now.getHours() >= 20; // 8 PM o más: menos de 4 horas para medianoche
+      message = `Plazo de confirmación vencido: Esta reserva requería confirmación previa de 24 horas (plazo límite: ${deadlineFormatted} a las ${timeLabel}) y ha sido cancelada automáticamente.`;
+    } else if (totalHoursRemaining < 4) {
+      // Menos de 4 horas exactas para el plazo límite -> ALERTA URGENTE
       style = {
-        bg: isUrgentHours
-          ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700 text-rose-900 dark:text-rose-100 font-medium'
-          : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 text-rose-900 dark:text-rose-100 font-medium',
+        bg: 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700 text-rose-900 dark:text-rose-100 font-medium',
         icon: 'text-rose-600 dark:text-rose-400',
         badge: 'bg-rose-100 text-rose-800 border-rose-300',
       };
-      message = isUrgentHours
-        ? `Plazo de confirmación por vencer: Su llegada está programada para mañana (${checkInFormatted}). Por favor confirme su asistencia antes de la medianoche para mantener activa su reserva.`
-        : `Último día para confirmar: Su llegada está programada para mañana (${checkInFormatted}). Dispone hasta las 23:59 de hoy para confirmar su asistencia.`;
-    } else if (daysToConfirm === 1) {
+      message = `Aviso urgente: Dispone de ${totalHoursRemaining} hora(s) y ${remainingMinutes} minuto(s) para confirmar su asistencia. Su plazo límite vence a las ${timeLabel} de hoy (24 horas antes de su llegada el ${checkInFormatted} a las ${timeLabel}). De no confirmar, la reserva se cancelará automáticamente.`;
+    } else if (totalHoursRemaining < 24) {
+      // Entre 4 y 23 horas restantes
       style = {
         bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200',
         icon: 'text-amber-600 dark:text-amber-400',
         badge: 'bg-amber-100 text-amber-800 border-amber-300',
       };
-      message = `Dispone de 1 día para confirmar: Su llegada está programada para el ${checkInFormatted}. El plazo oficial vence mañana (${deadlineFormatted}).`;
+      message = `Dispone de ${totalHoursRemaining} horas para confirmar su asistencia. Su plazo límite vence a las ${timeLabel} del ${deadlineFormatted} (exactamente 24 horas antes de su llegada el ${checkInFormatted} a las ${timeLabel}).`;
     } else {
+      // 24 horas o más
       style = {
         bg: 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/30 text-amber-900 dark:text-amber-200',
         icon: 'text-amber-600 dark:text-amber-400',
         badge: 'bg-amber-100/80 text-amber-800 border-amber-300',
       };
-      message = `Dispone de ${daysToConfirm} días para confirmar su asistencia (Plazo límite: ${deadlineFormatted}, un día antes de su llegada el ${checkInFormatted}).`;
+      message = `Dispone de ${diffDays} día(s) y ${remainingHours} hora(s) para confirmar su asistencia (Plazo límite: ${deadlineFormatted} a las ${timeLabel}).`;
     }
 
     return {
-      daysUntilCheckIn,
-      daysToConfirm,
+      checkInDateTime,
+      deadlineDateTime,
+      timeLabel,
+      totalHoursRemaining,
+      totalMinutesRemaining,
+      diffDays,
+      remainingHours,
       checkInFormatted,
       deadlineFormatted,
       message,
       style,
-      isExpired: daysToConfirm < 0 || daysUntilCheckIn <= 0,
+      isExpired,
+      isUrgent: totalHoursRemaining < 4 && !isExpired,
     };
   };
 
@@ -246,7 +255,7 @@ export default function MyReservationsPage() {
         ) : (
           <div className="space-y-4">
             {reservations.map((res) => {
-              const confirmInfo = res.status === 'pending' ? getConfirmationInfo(res.check_in_date) : null;
+              const confirmInfo = res.status === 'pending' ? getConfirmationInfo(res.check_in_date, res.estimated_arrival_time) : null;
               const extras = res.extras || [];
               const extrasTotal = extras.reduce((sum, e) => sum + (e.subtotal || e.unit_price || 0), 0);
               const roomTotal = Number(res.final_total) > 0 && Number(res.final_total) < 2000
@@ -300,9 +309,9 @@ export default function MyReservationsPage() {
                           Habitación #{res.room_id}
                         </span>
                         {res.estimated_arrival_time && (
-                          <span className="flex items-center gap-1.5 text-brand-700 dark:text-brand-300 font-semibold bg-brand-50 dark:bg-brand-950/40 px-2.5 py-0.5 rounded-lg border border-brand-200 dark:border-brand-800/40">
+                          <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 font-semibold bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-lg border border-slate-200 dark:border-slate-700" title="Hora de llegada definitiva registrada para esta reservación">
                             <Clock className="w-3.5 h-3.5 text-brand-600" />
-                            Llegada estimada: {res.estimated_arrival_time}
+                            Llegada registrada: {res.estimated_arrival_time} (Definitiva)
                           </span>
                         )}
                       </div>
@@ -373,15 +382,15 @@ export default function MyReservationsPage() {
                           </button>
                         )}
 
-                        {/* Indicar/Editar Hora de Llegada */}
-                        {['pending', 'confirmed'].includes(res.status) && (
+                        {/* Registrar Hora de Llegada - Disponible únicamente si no ha sido registrada previamente */}
+                        {['pending', 'confirmed'].includes(res.status) && !res.estimated_arrival_time && (
                           <button
                             onClick={() => handleOpenArrivalModal(res)}
-                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5"
-                            title="Indicar o cambiar tu hora de llegada"
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5"
+                            title="Registrar hora estimada de llegada (Registro único)"
                           >
                             <Clock className="w-3.5 h-3.5 text-brand-600" />
-                            {res.estimated_arrival_time ? 'Cambiar Llegada' : 'Hora Llegada'}
+                            Registrar Llegada
                           </button>
                         )}
 
@@ -480,8 +489,11 @@ export default function MyReservationsPage() {
                 </button>
               </div>
 
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-                Indica al personal de recepción a qué hora planeas llegar para que tengan tu habitación y llave listas (Reserva #{editingArrivalReservation.id}).
+              <p className="text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
+                Indique su hora estimada de llegada a recepción (Reserva #{editingArrivalReservation.id}).
+                <span className="block mt-1.5 p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 font-medium">
+                  Registro único y definitivo: Esta hora solo puede establecerse una única vez por cada reservación. Una vez confirmada, fijará su plazo límite de confirmación (exactamente 24 horas antes de dicha hora) y no podrá modificarse.
+                </span>
               </p>
 
               <form onSubmit={handleSaveArrivalTime} className="space-y-4">
