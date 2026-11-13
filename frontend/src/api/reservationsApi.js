@@ -1,6 +1,63 @@
 import { supabase } from '../lib/supabaseClient';
 import api from './client';
 
+export const autoCancelExpiredReservations = async (reservations = []) => {
+  if (!reservations || reservations.length === 0) return reservations;
+  
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const expiredIds = [];
+
+  for (const r of reservations) {
+    if (r.status === 'pending' && r.check_in_date) {
+      const [cY, cM, cD] = r.check_in_date.split('-').map(Number);
+      const checkIn = new Date(cY, cM - 1, cD);
+      const diffDays = Math.round((checkIn - today) / (1000 * 60 * 60 * 24));
+      
+      // If check-in date is today or has passed (diffDays <= 0) and status is still pending:
+      // it was not confirmed at least 1 day before -> auto-cancel!
+      if (diffDays <= 0) {
+        expiredIds.push(r.id);
+      }
+    }
+  }
+
+  if (expiredIds.length > 0) {
+    try {
+      await supabase
+        .from('reservations')
+        .update({ status: 'cancelled' })
+        .in('id', expiredIds);
+
+      // Create notifications for the affected reservations
+      for (const id of expiredIds) {
+        const res = reservations.find((item) => item.id === id);
+        if (res && res.user_id) {
+          await supabase.from('notifications').insert({
+            user_id: res.user_id,
+            title: 'Reserva Auto-Cancelada',
+            message: `Tu reserva #${res.id} para el ${res.check_in_date} fue cancelada automáticamente por no haber sido confirmada con al menos 1 día de anticipación.`,
+            type: 'cancellation',
+            is_read: false,
+          });
+        }
+      }
+    } catch (cancelErr) {
+      console.warn('Auto-cancel non-fatal error:', cancelErr);
+    }
+
+    return reservations.map((r) => {
+      if (expiredIds.includes(r.id)) {
+        return { ...r, status: 'cancelled' };
+      }
+      return r;
+    });
+  }
+
+  return reservations;
+};
+
 export const normalizeReservation = (r) => {
   if (!r) return r;
   const finalTotal = Number(r.final_total !== undefined ? r.final_total : r.total_amount || 0);
@@ -153,7 +210,9 @@ export const reservationsApi = {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      return { success: true, data: (data || []).map(normalizeReservation) };
+      const normalized = (data || []).map(normalizeReservation);
+      const checked = await autoCancelExpiredReservations(normalized);
+      return { success: true, data: checked };
     } catch (err) {
       console.warn('Supabase getMyReservations fallback to API:', err);
       const res = await api.get('/reservations/my');
@@ -176,7 +235,9 @@ export const reservationsApi = {
 
       const { data, error } = await query;
       if (error) throw error;
-      return { success: true, data: (data || []).map(normalizeReservation) };
+      const normalized = (data || []).map(normalizeReservation);
+      const checked = await autoCancelExpiredReservations(normalized);
+      return { success: true, data: checked };
     } catch (err) {
       const res = await api.get('/reservations/', { params });
       return {

@@ -88,17 +88,78 @@ export default function MyReservationsPage() {
     );
   };
 
-  const getDaysUntilCheckIn = (checkInDate) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const checkIn = new Date(checkInDate);
-    checkIn.setHours(0, 0, 0, 0);
-    return Math.ceil((checkIn - today) / (1000 * 60 * 60 * 24));
-  };
+  const getConfirmationInfo = (checkInDateStr) => {
+    if (!checkInDateStr) return null;
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
-  const isDeadlineApproaching = (checkInDate) => {
-    const days = getDaysUntilCheckIn(checkInDate);
-    return days >= 0 && days <= 2;
+    const [cY, cM, cD] = checkInDateStr.split('-').map(Number);
+    const checkIn = new Date(cY, cM - 1, cD);
+
+    const daysUntilCheckIn = Math.round((checkIn - today) / (1000 * 60 * 60 * 24));
+    
+    // Plazo límite: exactamente 1 día antes del check-in
+    const deadlineDate = new Date(checkIn);
+    deadlineDate.setDate(deadlineDate.getDate() - 1);
+    
+    const daysToConfirm = Math.round((deadlineDate - today) / (1000 * 60 * 60 * 24));
+
+    const checkInFormatted = checkIn.toLocaleDateString('es-CO', {
+      day: 'numeric',
+      month: 'long',
+    });
+
+    const deadlineFormatted = deadlineDate.toLocaleDateString('es-CO', {
+      day: 'numeric',
+      month: 'long',
+    });
+
+    let message = '';
+    let style = {
+      bg: 'bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800/40 text-blue-900 dark:text-blue-200',
+      icon: 'text-blue-600 dark:text-blue-400',
+      badge: 'bg-blue-100 text-blue-800 border-blue-300',
+    };
+
+    if (daysToConfirm < 0 || daysUntilCheckIn <= 0) {
+      style = {
+        bg: 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/40 text-rose-900 dark:text-rose-200',
+        icon: 'text-rose-600 dark:text-rose-400',
+        badge: 'bg-rose-100 text-rose-800 border-rose-300',
+      };
+      message = 'Plazo de confirmación vencido: esta reserva no fue confirmada con al menos 1 día de anticipación y ha sido cancelada automáticamente.';
+    } else if (daysToConfirm === 0) {
+      style = {
+        bg: 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800/50 text-rose-900 dark:text-rose-100 font-semibold',
+        icon: 'text-rose-600 dark:text-rose-400 animate-pulse',
+        badge: 'bg-rose-200 text-rose-900 border-rose-400',
+      };
+      message = `⚠️ ¡Hoy es el último día para confirmar! Tu llegada es mañana (${checkInFormatted}). Tienes plazo hasta hoy a las 11:59 PM para confirmar tu asistencia.`;
+    } else if (daysToConfirm === 1) {
+      style = {
+        bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200',
+        icon: 'text-amber-600 dark:text-amber-400',
+        badge: 'bg-amber-100 text-amber-800 border-amber-300',
+      };
+      message = `¡Te queda 1 día para confirmar! Tu llegada es el ${checkInFormatted}. Tienes plazo hasta mañana (${deadlineFormatted}) para confirmar.`;
+    } else {
+      style = {
+        bg: 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/30 text-amber-900 dark:text-amber-200',
+        icon: 'text-amber-600 dark:text-amber-400',
+        badge: 'bg-amber-100/80 text-amber-800 border-amber-300',
+      };
+      message = `Tienes ${daysToConfirm} días para confirmar tu asistencia (Plazo límite: ${deadlineFormatted}, 1 día antes de tu llegada el ${checkInFormatted}).`;
+    }
+
+    return {
+      daysUntilCheckIn,
+      daysToConfirm,
+      checkInFormatted,
+      deadlineFormatted,
+      message,
+      style,
+      isExpired: daysToConfirm < 0 || daysUntilCheckIn <= 0,
+    };
   };
 
   const fmtAmt = (amt) => Number(amt) > 0 && Number(amt) < 2000
@@ -156,8 +217,7 @@ export default function MyReservationsPage() {
         ) : (
           <div className="space-y-4">
             {reservations.map((res) => {
-              const daysUntilCheckIn = getDaysUntilCheckIn(res.check_in_date);
-              const approaching = res.status === 'pending' && isDeadlineApproaching(res.check_in_date);
+              const confirmInfo = res.status === 'pending' ? getConfirmationInfo(res.check_in_date) : null;
               const extras = res.extras || [];
               const extrasTotal = extras.reduce((sum, e) => sum + (e.subtotal || e.unit_price || 0), 0);
               const roomTotal = Number(res.final_total) > 0 && Number(res.final_total) < 2000
@@ -170,17 +230,25 @@ export default function MyReservationsPage() {
                   key={res.id}
                   className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all overflow-hidden"
                 >
-                  {/* Deadline warning */}
-                  {approaching && (
-                    <div className="bg-amber-50 border-b border-amber-200 px-4 py-2.5 flex items-center gap-2 animate-slideUp">
-                      <Clock className="w-4 h-4 text-amber-600 shrink-0" />
-                      <p className="text-xs font-bold text-amber-800">
-                        {daysUntilCheckIn === 0
-                          ? '¡Hoy es el último día para confirmar esta reserva!'
-                          : daysUntilCheckIn === 1
-                          ? '¡Mañana es el último día para confirmar!'
-                          : `Solo quedan ${daysUntilCheckIn} días para confirmar esta reserva`}
-                      </p>
+                  {/* Smart Confirmation Deadline Warning */}
+                  {res.status === 'pending' && confirmInfo && (
+                    <div className={`px-4 py-3 border-b flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-slideUp ${confirmInfo.style.bg}`}>
+                      <div className="flex items-center gap-2.5">
+                        <Clock className={`w-4 h-4 shrink-0 ${confirmInfo.style.icon}`} />
+                        <p className="text-xs font-bold leading-tight">
+                          {confirmInfo.message}
+                        </p>
+                      </div>
+                      {!confirmInfo.isExpired && (
+                        <button
+                          onClick={() => handleConfirm(res.id)}
+                          disabled={confirmingId === res.id}
+                          className="shrink-0 self-start sm:self-auto px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all flex items-center gap-1.5 disabled:opacity-50"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Confirmar Asistencia
+                        </button>
+                      )}
                     </div>
                   )}
 
