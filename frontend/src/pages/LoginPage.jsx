@@ -126,23 +126,23 @@ export default function LoginPage() {
             <button
               type="button"
               onClick={() => handleQuickLogin('admin@hotelwork.com', 'Admin1234!')}
-              className="text-xs font-bold py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-brand-50 hover:border-brand-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all text-center shadow-sm"
+              className="text-xs font-semibold py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 hover:border-slate-300 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 transition-all text-center shadow-sm"
             >
-              👑 Admin
+              Administrador
             </button>
             <button
               type="button"
               onClick={() => handleQuickLogin('staff@hotelwork.com', 'Staff1234!')}
-              className="text-xs font-bold py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-brand-50 hover:border-brand-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all text-center shadow-sm"
+              className="text-xs font-semibold py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 hover:border-slate-300 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 transition-all text-center shadow-sm"
             >
-              💼 Staff
+              Recepción
             </button>
             <button
               type="button"
               onClick={() => handleQuickLogin('guest@hotelwork.com', 'Guest1234!')}
-              className="text-xs font-bold py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-brand-50 hover:border-brand-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all text-center shadow-sm"
+              className="text-xs font-semibold py-2 px-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 hover:bg-slate-100 hover:border-slate-300 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-100 transition-all text-center shadow-sm"
             >
-              🧳 Huésped
+              Huésped Demo
             </button>
           </div>
         </div>

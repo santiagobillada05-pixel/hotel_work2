@@ -156,7 +156,7 @@ export default function WelcomeModal({ onClose }) {
           {/* Note */}
           <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-2xl p-4 border border-emerald-200 dark:border-emerald-800/40 text-center space-y-1">
             <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
-              💳 Pago Únicamente en el Hotel
+              Pago en el Establecimiento
             </p>
             <p className="text-xs text-emerald-900 dark:text-emerald-200 leading-relaxed">
               No se realiza ningún cobro en la página web. El total (habitación + servicios elegidos) se paga directamente en el establecimiento al momento del registro de entrada (llegada), ya sea por transferencia, tarjeta o efectivo.

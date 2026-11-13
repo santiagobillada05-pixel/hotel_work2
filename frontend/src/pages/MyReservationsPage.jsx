@@ -156,28 +156,28 @@ export default function MyReservationsPage() {
       const isUrgentHours = now.getHours() >= 20; // 8 PM o más: menos de 4 horas para medianoche
       style = {
         bg: isUrgentHours
-          ? 'bg-rose-100 dark:bg-rose-950/60 border-rose-400 dark:border-rose-600 text-rose-950 dark:text-rose-100 font-bold shadow-sm'
-          : 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800/50 text-rose-900 dark:text-rose-100 font-semibold',
-        icon: 'text-rose-600 dark:text-rose-400 animate-pulse',
-        badge: 'bg-rose-200 text-rose-900 border-rose-400',
+          ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-300 dark:border-rose-700 text-rose-900 dark:text-rose-100 font-medium'
+          : 'bg-rose-50 dark:bg-rose-950/30 border-rose-200 dark:border-rose-800/50 text-rose-900 dark:text-rose-100 font-medium',
+        icon: 'text-rose-600 dark:text-rose-400',
+        badge: 'bg-rose-100 text-rose-800 border-rose-300',
       };
       message = isUrgentHours
-        ? `🚨 ¡URGENTE: Quedan menos de 4 horas para la medianoche! Tu llegada es mañana (${checkInFormatted}). Confirma tu asistencia ahora o tu reserva será cancelada automáticamente a las 11:59 PM.`
-        : `⚠️ ¡Hoy es el último día para confirmar! Tu llegada es mañana (${checkInFormatted}). Tienes plazo hasta hoy a las 11:59 PM para confirmar tu asistencia o la habitación será liberada.`;
+        ? `Plazo de confirmación por vencer: Su llegada está programada para mañana (${checkInFormatted}). Por favor confirme su asistencia antes de la medianoche para mantener activa su reserva.`
+        : `Último día para confirmar: Su llegada está programada para mañana (${checkInFormatted}). Dispone hasta las 23:59 de hoy para confirmar su asistencia.`;
     } else if (daysToConfirm === 1) {
       style = {
         bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200',
         icon: 'text-amber-600 dark:text-amber-400',
         badge: 'bg-amber-100 text-amber-800 border-amber-300',
       };
-      message = `¡Te queda 1 día para confirmar! Tu llegada es el ${checkInFormatted}. Tienes plazo hasta mañana (${deadlineFormatted}) para confirmar.`;
+      message = `Dispone de 1 día para confirmar: Su llegada está programada para el ${checkInFormatted}. El plazo oficial vence mañana (${deadlineFormatted}).`;
     } else {
       style = {
         bg: 'bg-amber-50/80 dark:bg-amber-950/20 border-amber-200/80 dark:border-amber-800/30 text-amber-900 dark:text-amber-200',
         icon: 'text-amber-600 dark:text-amber-400',
         badge: 'bg-amber-100/80 text-amber-800 border-amber-300',
       };
-      message = `Tienes ${daysToConfirm} días para confirmar tu asistencia (Plazo límite: ${deadlineFormatted}, 1 día antes de tu llegada el ${checkInFormatted}).`;
+      message = `Dispone de ${daysToConfirm} días para confirmar su asistencia (Plazo límite: ${deadlineFormatted}, un día antes de su llegada el ${checkInFormatted}).`;
     }
 
     return {
@@ -300,9 +300,9 @@ export default function MyReservationsPage() {
                           Habitación #{res.room_id}
                         </span>
                         {res.estimated_arrival_time && (
-                          <span className="flex items-center gap-1.5 text-brand-700 dark:text-brand-300 font-bold bg-brand-50 dark:bg-brand-950/40 px-2.5 py-0.5 rounded-lg border border-brand-200 dark:border-brand-800/40">
+                          <span className="flex items-center gap-1.5 text-brand-700 dark:text-brand-300 font-semibold bg-brand-50 dark:bg-brand-950/40 px-2.5 py-0.5 rounded-lg border border-brand-200 dark:border-brand-800/40">
                             <Clock className="w-3.5 h-3.5 text-brand-600" />
-                            Llegada: {res.estimated_arrival_time}
+                            Llegada estimada: {res.estimated_arrival_time}
                           </span>
                         )}
                       </div>

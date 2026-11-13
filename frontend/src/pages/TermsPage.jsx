@@ -219,16 +219,16 @@ export default function TermsPage() {
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-center text-xs font-semibold">
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
-                    💳 Tarjeta de Crédito
+                    Tarjeta de Crédito
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
-                    🏧 Tarjeta Débito / PSE
+                    Tarjeta Débito / PSE
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
-                    💵 Efectivo (En Recepción)
+                    Efectivo en Recepción
                   </div>
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-700">
-                    🏦 Transferencia Bancaria
+                    Transferencia Bancaria
                   </div>
                 </div>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">

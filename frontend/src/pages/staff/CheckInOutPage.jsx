@@ -237,8 +237,8 @@ export default function CheckInOutPage() {
                           <td className="py-4 px-6 text-xs text-slate-600 dark:text-slate-300 font-medium">
                             <div>Entrada: <span className="font-bold text-slate-800 dark:text-slate-100">{res.check_in_date}</span></div>
                             {res.estimated_arrival_time && (
-                              <div className="text-[11px] font-bold text-brand-600 dark:text-brand-400 mt-0.5">
-                                ⏰ Llegada aprox: {res.estimated_arrival_time}
+                              <div className="text-[11px] font-semibold text-brand-600 dark:text-brand-400 mt-0.5">
+                                Llegada estimada: {res.estimated_arrival_time}
                               </div>
                             )}
                             <div>Check-out: <span className="font-bold text-slate-800 dark:text-slate-100">{res.check_out_date}</span></div>
@@ -258,12 +258,12 @@ export default function CheckInOutPage() {
                               </span>
                             )}
                             {res.is_paid ? (
-                              <span className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
-                                ✓ Pago Confirmado {res.payment_method ? `(${res.payment_method})` : ''}
+                              <span className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                                Pago Confirmado {res.payment_method ? `• ${res.payment_method}` : ''}
                               </span>
                             ) : (
-                              <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">
-                                ⏳ Pago Pendiente en Recepción
+                              <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">
+                                Cobro pendiente en recepción
                               </span>
                             )}
                           </td>
@@ -300,7 +300,7 @@ export default function CheckInOutPage() {
                               <button
                                 onClick={() => handleOpenPaymentModal(res, res.payments?.[0]?.id)}
                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
-                                title="Registrar pago del huésped para desbloquear Check-out"
+                                title="Registrar pago del huésped para habilitar Check-out"
                               >
                                 <CreditCard className="w-3.5 h-3.5" />
                                 Registrar Pago
@@ -309,7 +309,7 @@ export default function CheckInOutPage() {
 
                             {/* Check-out Button */}
                             {res.status === 'checked_in' && (
-                              <div className="inline-block" title={!res.is_paid ? "⚠️ Bloqueado: Primero registra el pago para habilitar el Check-out" : "Realizar salida y desocupar habitación"}>
+                              <div className="inline-block" title={!res.is_paid ? "Requiere registro de pago previo para procesar la salida" : "Realizar salida y desocupar habitación"}>
                                 <button
                                   onClick={() => handleCheckOut(res.id)}
                                   disabled={actionLoading === res.id || !res.is_paid}
@@ -320,7 +320,7 @@ export default function CheckInOutPage() {
                                   }`}
                                 >
                                   <LogOut className="w-3.5 h-3.5" />
-                                  Check-out {!res.is_paid && '🔒'}
+                                  Check-out
                                 </button>
                               </div>
                             )}
@@ -415,12 +415,12 @@ export default function CheckInOutPage() {
                   <select
                     value={paymentMethod}
                     onChange={(e) => handleMethodChange(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-semibold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   >
-                    <option value="cash">💵 Efectivo (Pago en recepción)</option>
-                    <option value="transfer">🏦 Transferencia Bancaria (Bancolombia / Nequi / Daviplata)</option>
-                    <option value="credit_card">💳 Tarjeta de Crédito</option>
-                    <option value="debit_card">💳 Tarjeta de Débito</option>
+                    <option value="cash">Efectivo (Recepción)</option>
+                    <option value="transfer">Transferencia bancaria (Bancolombia, Nequi, Daviplata)</option>
+                    <option value="credit_card">Tarjeta de crédito</option>
+                    <option value="debit_card">Tarjeta de débito</option>
                   </select>
                 </div>
 
