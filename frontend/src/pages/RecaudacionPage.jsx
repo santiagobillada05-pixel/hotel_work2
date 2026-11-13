@@ -88,15 +88,15 @@ export default function RecaudacionPage() {
           </div>
           <div className="mb-1">
             <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-              {data ? formatCurrency(data.totals.week.amount) : '---'}
+              {data?.totals?.week ? formatCurrency(data.totals.week.amount) : '---'}
             </span>
           </div>
           <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 mb-2">
             <Calendar className="w-3 h-3 mr-1" />
-            {data ? formatDateRange(data.totals.week.start, data.totals.week.end) : 'Cargando...'}
+            {data?.totals?.week ? formatDateRange(data.totals.week.start, data.totals.week.end) : 'Cargando...'}
           </div>
           <div className="text-sm text-slate-600 dark:text-slate-300">
-            {data ? `${data.totals.week.count} cobro(s)` : '-'}
+            {data?.totals?.week ? `${data.totals.week.count} cobro(s)` : '-'}
           </div>
         </div>
 
@@ -110,15 +110,15 @@ export default function RecaudacionPage() {
           </div>
           <div className="mb-1">
             <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-              {data ? formatCurrency(data.totals.month.amount) : '---'}
+              {data?.totals?.month ? formatCurrency(data.totals.month.amount) : '---'}
             </span>
           </div>
           <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 mb-2">
             <Calendar className="w-3 h-3 mr-1" />
-            {data ? formatDateRange(data.totals.month.start, data.totals.month.end) : 'Cargando...'}
+            {data?.totals?.month ? formatDateRange(data.totals.month.start, data.totals.month.end) : 'Cargando...'}
           </div>
           <div className="text-sm text-slate-600 dark:text-slate-300">
-            {data ? `${data.totals.month.count} cobro(s)` : '-'}
+            {data?.totals?.month ? `${data.totals.month.count} cobro(s)` : '-'}
           </div>
         </div>
 
@@ -132,15 +132,15 @@ export default function RecaudacionPage() {
           </div>
           <div className="mb-1">
             <span className="text-3xl font-bold text-slate-900 dark:text-slate-50">
-              {data ? formatCurrency(data.totals.year.amount) : '---'}
+              {data?.totals?.year ? formatCurrency(data.totals.year.amount) : '---'}
             </span>
           </div>
           <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 mb-2">
             <Calendar className="w-3 h-3 mr-1" />
-            {data ? formatDateRange(data.totals.year.start, data.totals.year.end) : 'Cargando...'}
+            {data?.totals?.year ? formatDateRange(data.totals.year.start, data.totals.year.end) : 'Cargando...'}
           </div>
           <div className="text-sm text-slate-600 dark:text-slate-300">
-            {data ? `${data.totals.year.count} cobro(s)` : '-'}
+            {data?.totals?.year ? `${data.totals.year.count} cobro(s)` : '-'}
           </div>
         </div>
       </div>
@@ -197,7 +197,7 @@ export default function RecaudacionPage() {
                     Cargando cobros...
                   </td>
                 </tr>
-              ) : data && data.payments.length > 0 ? (
+              ) : Array.isArray(data?.payments) && data.payments.length > 0 ? (
                 data.payments.map((p) => (
                   <tr key={p.id} className="hover:bg-slate-50 dark:bg-slate-900/50 transition-colors">
                     <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 whitespace-nowrap">
