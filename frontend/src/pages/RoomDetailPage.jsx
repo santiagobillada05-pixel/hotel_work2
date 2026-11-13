@@ -13,6 +13,7 @@ import {
   CheckCircle2, 
   Calendar, 
   ShieldCheck, 
+  ShieldAlert,
   Clock, 
   Receipt, 
   Loader2, 
@@ -25,16 +26,7 @@ export default function RoomDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuthStore();
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (user?.role === "admin") {
-        navigate("/admin/dashboard", { replace: true });
-      } else if (user?.role === "staff") {
-        navigate("/check-in-out", { replace: true });
-      }
-    }
-  }, [isAuthenticated, user, navigate]);
+  const isStaffOrAdmin = user?.role === "admin" || user?.role === "staff";
 
   const today = new Date().toISOString().split("T")[0];
   const tomorrow = new Date();
@@ -105,6 +97,10 @@ export default function RoomDetailPage() {
 
   const handleBooking = async (e) => {
     e.preventDefault();
+    if (isStaffOrAdmin) {
+      setError("Las cuentas de Administrador y Personal de Recepción no pueden reservar habitaciones. Acceda como huésped para continuar.");
+      return;
+    }
     if (!isAuthenticated) {
       navigate('/login', { state: { from: `/rooms/${id}` } });
       return;
@@ -345,6 +341,26 @@ export default function RoomDetailPage() {
                   >
                     Ver Mis Reservas
                   </button>
+                </div>
+              ) : isStaffOrAdmin ? (
+                <div className="text-center py-8 px-4 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 rounded-2xl space-y-3">
+                  <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full flex items-center justify-center mx-auto">
+                    <ShieldAlert className="w-6 h-6" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                    Función restringida para {user?.role === 'admin' ? 'Administrador' : 'Recepción (Staff)'}
+                  </h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-light">
+                    Las cuentas administrativas y de recepción no tienen habilitada la creación de reservas. Para reservar una habitación, inicie sesión con una cuenta de huésped.
+                  </p>
+                  <div className="pt-2">
+                    <button
+                      onClick={() => navigate(user?.role === 'admin' ? '/admin/dashboard' : '/staff/check-in-out')}
+                      className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-semibold rounded-xl text-xs shadow transition-all"
+                    >
+                      Ir al Panel de {user?.role === 'admin' ? 'Administrador' : 'Recepción'}
+                    </button>
+                  </div>
                 </div>
               ) : !room.is_room_bookable ? (
                 <div className="text-center py-8 px-4 bg-blue-50 border border-blue-100 rounded-2xl">

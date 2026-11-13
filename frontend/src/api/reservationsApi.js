@@ -155,6 +155,10 @@ export const reservationsApi = {
       const user = stored ? JSON.parse(stored) : null;
       if (!user) throw new Error('Debes iniciar sesión para realizar una reserva.');
 
+      if (user.role === 'admin' || user.role === 'staff') {
+        throw new Error('Las cuentas de Administrador y Personal de Recepción no pueden reservar habitaciones. Inicie sesión como huésped para realizar una reserva.');
+      }
+
       // Fetch room details
       const { data: room, error: rErr } = await supabase
         .from('rooms')
