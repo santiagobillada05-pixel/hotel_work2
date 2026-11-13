@@ -1,18 +1,146 @@
 import { supabase } from '../lib/supabaseClient';
 import api from './client';
 
+// Generador de notificaciones inteligentes basadas en las reservas del huésped
+const generateSmartReservationNotifications = async (userId) => {
+  if (!userId) return;
+  try {
+    const { data: reservations, error } = await supabase
+      .from('reservations')
+      .select('id, user_id, check_in_date, check_out_date, status, room:rooms(room_number, room_type)')
+      .eq('user_id', userId)
+      .in('status', ['pending', 'confirmed']);
+
+    if (error || !reservations || reservations.length === 0) return;
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const currentHour = now.getHours();
+
+    // Obtener notificaciones existentes para evitar duplicar las de hoy
+    const { data: existingNotifs } = await supabase
+      .from('notifications')
+      .select('title, created_at')
+      .eq('user_id', userId);
+
+    const existingTitles = new Set((existingNotifs || []).map((n) => n.title));
+
+    for (const r of reservations) {
+      if (!r.check_in_date) continue;
+      const [cY, cM, cD] = r.check_in_date.split('-').map(Number);
+      const checkIn = new Date(cY, cM - 1, cD);
+      const daysUntilArrival = Math.round((checkIn - today) / (1000 * 60 * 60 * 24));
+
+      // Plazo límite: 1 día antes del check-in
+      const deadlineDate = new Date(checkIn);
+      deadlineDate.setDate(deadlineDate.getDate() - 1);
+      const daysToConfirm = Math.round((deadlineDate - today) / (1000 * 60 * 60 * 24));
+
+      const roomLabel = r.room?.room_number ? `Habitación ${r.room.room_number}` : 'tu habitación';
+
+      // 1. Huésped con reserva PENDIENTE
+      if (r.status === 'pending') {
+        if (daysToConfirm === 0) {
+          // Hoy es el último día para confirmar (la entrada es mañana)
+          if (currentHour >= 20) {
+            // Menos de 4 horas para la medianoche
+            const title = `🚨 ¡URGENTE: Faltan menos de 4 horas para cancelar tu reserva #${r.id}!`;
+            if (!existingTitles.has(title)) {
+              await supabase.from('notifications').insert({
+                user_id: userId,
+                title,
+                message: `Tu llegada a ${roomLabel} es mañana (${r.check_in_date}). Quedan menos de 4 horas para confirmar tu asistencia. Confirma antes de medianoche o tu reserva será cancelada automáticamente.`,
+                type: 'cancellation',
+                is_read: false,
+              });
+              existingTitles.add(title);
+            }
+          } else {
+            const title = `⚠️ ¡Hoy es el último día para confirmar tu reserva #${r.id}!`;
+            if (!existingTitles.has(title)) {
+              await supabase.from('notifications').insert({
+                user_id: userId,
+                title,
+                message: `Tu llegada a ${roomLabel} es mañana (${r.check_in_date}). Tienes plazo hasta hoy a las 11:59 PM para confirmar tu asistencia o la habitación será liberada.`,
+                type: 'warning',
+                is_read: false,
+              });
+              existingTitles.add(title);
+            }
+          }
+        } else if (daysToConfirm === 1) {
+          const title = `⏰ Falta 1 día para el plazo de confirmación (Reserva #${r.id})`;
+          if (!existingTitles.has(title)) {
+            await supabase.from('notifications').insert({
+              user_id: userId,
+              title,
+              message: `Recuerda confirmar tu reserva para ${roomLabel}. Tu llegada es el ${r.check_in_date}. Tienes plazo hasta mañana para confirmar tu asistencia.`,
+              type: 'info',
+              is_read: false,
+            });
+            existingTitles.add(title);
+          }
+        }
+      }
+
+      // 2. Huésped con reserva CONFIRMADA
+      if (r.status === 'confirmed') {
+        if (daysUntilArrival === 1) {
+          const title = `🧳 ¡Falta 1 día para tu entrada al hotel! (Reserva #${r.id})`;
+          if (!existingTitles.has(title)) {
+            await supabase.from('notifications').insert({
+              user_id: userId,
+              title,
+              message: `¡Todo está listo para tu llegada mañana (${r.check_in_date}) a ${roomLabel}! El check-in está disponible a partir de las 3:00 PM. Recuerda que el pago se realiza en recepción (efectivo, transferencia o tarjeta).`,
+              type: 'confirmation',
+              is_read: false,
+            });
+            existingTitles.add(title);
+          }
+        } else if (daysUntilArrival === 0) {
+          const title = `🏨 ¡Hoy es el día de tu llegada! (Reserva #${r.id})`;
+          if (!existingTitles.has(title)) {
+            await supabase.from('notifications').insert({
+              user_id: userId,
+              title,
+              message: `Te esperamos hoy en recepción para entregarte las llaves de ${roomLabel}. ¡Bienvenido a HotelWork!`,
+              type: 'confirmation',
+              is_read: false,
+            });
+            existingTitles.add(title);
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('Smart reservation notifications generator error:', err);
+  }
+};
+
 export const notificationsApi = {
   getMyNotifications: async () => {
     try {
       const stored = localStorage.getItem('user');
       const user = stored ? JSON.parse(stored) : null;
+      if (user && user.id) {
+        await generateSmartReservationNotifications(user.id);
+      }
+
       let query = supabase.from('notifications').select('*').order('created_at', { ascending: false });
       if (user && user.id) {
         query = query.or(`user_id.eq.${user.id},user_id.is.null`);
       }
       const { data, error } = await query;
       if (error) throw error;
-      return { success: true, data: data || [] };
+      const list = data || [];
+      const unread = list.filter((n) => !n.is_read).length;
+      return { 
+        success: true, 
+        data: {
+          notifications: list,
+          unread_count: unread,
+        }
+      };
     } catch (err) {
       return api.get('/notifications/');
     }

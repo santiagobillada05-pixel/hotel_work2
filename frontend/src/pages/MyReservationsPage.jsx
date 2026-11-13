@@ -27,6 +27,9 @@ export default function MyReservationsPage() {
   const [selectedReceipt, setSelectedReceipt] = useState(null);
   const [extrasModalReservation, setExtrasModalReservation] = useState(null);
   const [confirmingId, setConfirmingId] = useState(null);
+  const [editingArrivalReservation, setEditingArrivalReservation] = useState(null);
+  const [arrivalTimeInput, setArrivalTimeInput] = useState('3:00 PM (Check-in estándar)');
+  const [updatingArrival, setUpdatingArrival] = useState(false);
 
   const fetchMyReservations = async () => {
     setLoading(true);
@@ -69,6 +72,27 @@ export default function MyReservationsPage() {
       alert(err.message || 'Error al confirmar la reserva');
     } finally {
       setConfirmingId(null);
+    }
+  };
+
+  const handleOpenArrivalModal = (res) => {
+    setEditingArrivalReservation(res);
+    setArrivalTimeInput(res.estimated_arrival_time || '3:00 PM (Check-in estándar)');
+  };
+
+  const handleSaveArrivalTime = async (e) => {
+    e.preventDefault();
+    if (!editingArrivalReservation) return;
+    setUpdatingArrival(true);
+    try {
+      await reservationsApi.updateArrivalTime(editingArrivalReservation.id, arrivalTimeInput);
+      setEditingArrivalReservation(null);
+      await fetchMyReservations();
+      alert('Hora de llegada actualizada exitosamente. El personal de recepción ha sido notificado.');
+    } catch (err) {
+      alert(err.message || 'Error al actualizar hora de llegada');
+    } finally {
+      setUpdatingArrival(false);
     }
   };
 
@@ -129,12 +153,17 @@ export default function MyReservationsPage() {
       };
       message = 'Plazo de confirmación vencido: esta reserva no fue confirmada con al menos 1 día de anticipación y ha sido cancelada automáticamente.';
     } else if (daysToConfirm === 0) {
+      const isUrgentHours = now.getHours() >= 20; // 8 PM o más: menos de 4 horas para medianoche
       style = {
-        bg: 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800/50 text-rose-900 dark:text-rose-100 font-semibold',
+        bg: isUrgentHours
+          ? 'bg-rose-100 dark:bg-rose-950/60 border-rose-400 dark:border-rose-600 text-rose-950 dark:text-rose-100 font-bold shadow-sm'
+          : 'bg-rose-50 dark:bg-rose-950/30 border-rose-300 dark:border-rose-800/50 text-rose-900 dark:text-rose-100 font-semibold',
         icon: 'text-rose-600 dark:text-rose-400 animate-pulse',
         badge: 'bg-rose-200 text-rose-900 border-rose-400',
       };
-      message = `⚠️ ¡Hoy es el último día para confirmar! Tu llegada es mañana (${checkInFormatted}). Tienes plazo hasta hoy a las 11:59 PM para confirmar tu asistencia.`;
+      message = isUrgentHours
+        ? `🚨 ¡URGENTE: Quedan menos de 4 horas para la medianoche! Tu llegada es mañana (${checkInFormatted}). Confirma tu asistencia ahora o tu reserva será cancelada automáticamente a las 11:59 PM.`
+        : `⚠️ ¡Hoy es el último día para confirmar! Tu llegada es mañana (${checkInFormatted}). Tienes plazo hasta hoy a las 11:59 PM para confirmar tu asistencia o la habitación será liberada.`;
     } else if (daysToConfirm === 1) {
       style = {
         bg: 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800/40 text-amber-900 dark:text-amber-200',
@@ -270,11 +299,17 @@ export default function MyReservationsPage() {
                           <BedDouble className="w-4 h-4 text-brand-600" />
                           Habitación #{res.room_id}
                         </span>
+                        {res.estimated_arrival_time && (
+                          <span className="flex items-center gap-1.5 text-brand-700 dark:text-brand-300 font-bold bg-brand-50 dark:bg-brand-950/40 px-2.5 py-0.5 rounded-lg border border-brand-200 dark:border-brand-800/40">
+                            <Clock className="w-3.5 h-3.5 text-brand-600" />
+                            Llegada: {res.estimated_arrival_time}
+                          </span>
+                        )}
                       </div>
 
-                      {res.special_requests && (
+                      {res.clean_special_requests && (
                         <p className="text-xs text-slate-500 dark:text-slate-400 italic bg-slate-50 dark:bg-slate-900/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50 max-w-lg">
-                          "{res.special_requests}"
+                          "{res.clean_special_requests}"
                         </p>
                       )}
 
@@ -335,6 +370,18 @@ export default function MyReservationsPage() {
                           >
                             <Plus className="w-3.5 h-3.5" />
                             Servicios
+                          </button>
+                        )}
+
+                        {/* Indicar/Editar Hora de Llegada */}
+                        {['pending', 'confirmed'].includes(res.status) && (
+                          <button
+                            onClick={() => handleOpenArrivalModal(res)}
+                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition-colors flex items-center gap-1.5"
+                            title="Indicar o cambiar tu hora de llegada"
+                          >
+                            <Clock className="w-3.5 h-3.5 text-brand-600" />
+                            {res.estimated_arrival_time ? 'Cambiar Llegada' : 'Hora Llegada'}
                           </button>
                         )}
 
@@ -412,6 +459,74 @@ export default function MyReservationsPage() {
                   onTotalChange={() => {}}
                 />
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Arrival Time Modal */}
+        {editingArrivalReservation && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+            <div className="bg-white dark:bg-slate-800 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-100 dark:border-slate-700/50">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-base font-bold text-slate-900 dark:text-slate-50 flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-brand-600" />
+                  Hora Estimada de Llegada al Hotel
+                </h3>
+                <button
+                  onClick={() => setEditingArrivalReservation(null)}
+                  className="p-1 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  <XCircle className="w-5 h-5" />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                Indica al personal de recepción a qué hora planeas llegar para que tengan tu habitación y llave listas (Reserva #{editingArrivalReservation.id}).
+              </p>
+
+              <form onSubmit={handleSaveArrivalTime} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1.5">
+                    Selecciona tu hora aproximada:
+                  </label>
+                  <select
+                    value={arrivalTimeInput}
+                    onChange={(e) => setArrivalTimeInput(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-900 dark:text-slate-50 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                  >
+                    <option value="12:00 PM">12:00 PM (Mediodía)</option>
+                    <option value="1:00 PM">1:00 PM</option>
+                    <option value="2:00 PM">2:00 PM (Check-in temprano)</option>
+                    <option value="3:00 PM (Check-in estándar)">3:00 PM (Check-in estándar)</option>
+                    <option value="4:00 PM">4:00 PM</option>
+                    <option value="5:00 PM">5:00 PM</option>
+                    <option value="6:00 PM">6:00 PM</option>
+                    <option value="7:00 PM">7:00 PM</option>
+                    <option value="8:00 PM">8:00 PM</option>
+                    <option value="9:00 PM">9:00 PM</option>
+                    <option value="10:00 PM">10:00 PM (Noche)</option>
+                    <option value="11:00 PM">11:00 PM (Llegada tardía)</option>
+                    <option value="Madrugada (12:00 AM - 5:00 AM)">Madrugada (12:00 AM - 5:00 AM)</option>
+                  </select>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="submit"
+                    disabled={updatingArrival}
+                    className="flex-1 bg-brand-600 hover:bg-brand-700 text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow disabled:opacity-50"
+                  >
+                    {updatingArrival ? 'Guardando...' : 'Guardar Hora de Llegada'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setEditingArrivalReservation(null)}
+                    className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-200 font-semibold py-2.5 rounded-xl text-sm transition-all"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

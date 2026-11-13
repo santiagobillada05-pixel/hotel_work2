@@ -87,13 +87,26 @@ export default function CheckInOutPage() {
       return;
     }
     setPaymentModalData(res);
-    setPaymentModalPaymentId(paymentId);
+    setPaymentModalPaymentId(paymentId || res.payments?.[0]?.id || null);
     setPaymentCurrency('COP');
+    setPaymentMethod('cash');
     const roomCop = isLegacyUSD(res.final_total) ? res.final_total * 4000 : Number(res.final_total || 0);
     const extrasCop = Number(res.extras_total || 0);
     const grandCop = roomCop + extrasCop;
     setPaymentAmount(new Intl.NumberFormat('es-CO', { minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(grandCop));
-    setPaymentRef(`TXN-${Date.now().toString().slice(-6)}`);
+    setPaymentRef(`EFECTIVO-REC-${Date.now().toString().slice(-4)}`);
+  };
+
+  const handleMethodChange = (newMethod) => {
+    setPaymentMethod(newMethod);
+    const prefixMap = {
+      cash: 'EFECTIVO-REC',
+      transfer: 'TRF-BANCO',
+      credit_card: 'TC-POS',
+      debit_card: 'TD-POS',
+    };
+    const prefix = prefixMap[newMethod] || 'TXN';
+    setPaymentRef(`${prefix}-${Date.now().toString().slice(-4)}`);
   };
 
   const handleAmountChange = (e) => {
@@ -115,17 +128,20 @@ export default function CheckInOutPage() {
         parsedAmount = parseFloat(parsedAmount.replace(/\./g, '').replace(/,/g, ''));
       }
       
-      await paymentsApi.confirmPayment(paymentModalPaymentId, {
+      await paymentsApi.registerOrConfirmPayment({
+        reservationId: paymentModalData.id,
+        paymentId: paymentModalPaymentId,
         amount: parsedAmount,
-        currency: 'COP',
-        exchange_rate: 1.0,
         payment_method: paymentMethod,
         transaction_ref: paymentRef,
+        notes: `Pago verificado en recepción vía ${paymentMethod}`,
+        userId: paymentModalData.user_id,
       });
+
       setPaymentModalData(null);
       setPaymentModalPaymentId(null);
       await fetchReservations();
-      alert('Pago registrado correctamente. Se habilitó el Check-out y el registro ingresó a la Lista de Pagados.');
+      alert('¡Pago registrado exitosamente! Se ha desbloqueado el Check-out para esta reserva.');
     } catch (err) {
       if (err.response?.status === 409) {
         alert('Este pago ya fue confirmado.');
@@ -219,8 +235,13 @@ export default function CheckInOutPage() {
                           </td>
 
                           <td className="py-4 px-6 text-xs text-slate-600 dark:text-slate-300 font-medium">
-                            <div>Entrada: {res.check_in_date}</div>
-                            <div>Check-out: {res.check_out_date}</div>
+                            <div>Entrada: <span className="font-bold text-slate-800 dark:text-slate-100">{res.check_in_date}</span></div>
+                            {res.estimated_arrival_time && (
+                              <div className="text-[11px] font-bold text-brand-600 dark:text-brand-400 mt-0.5">
+                                ⏰ Llegada aprox: {res.estimated_arrival_time}
+                              </div>
+                            )}
+                            <div>Check-out: <span className="font-bold text-slate-800 dark:text-slate-100">{res.check_out_date}</span></div>
                           </td>
 
                           <td className="py-4 px-6">
@@ -236,9 +257,13 @@ export default function CheckInOutPage() {
                                 +${Number(res.extras_total).toLocaleString('es-CO')} en servicios
                               </span>
                             )}
-                            {res.is_paid && (
-                              <span className="block text-[10px] font-bold text-emerald-600 uppercase">
-                                Pago Confirmado
+                            {res.is_paid ? (
+                              <span className="block text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">
+                                ✓ Pago Confirmado {res.payment_method ? `(${res.payment_method})` : ''}
+                              </span>
+                            ) : (
+                              <span className="block text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase">
+                                ⏳ Pago Pendiente en Recepción
                               </span>
                             )}
                           </td>
@@ -270,33 +295,34 @@ export default function CheckInOutPage() {
                               </button>
                             )}
 
+                            {/* Payment Button - Visible whenever not paid to unlock Check-out */}
+                            {!res.is_paid && res.status !== 'cancelled' && (
+                              <button
+                                onClick={() => handleOpenPaymentModal(res, res.payments?.[0]?.id)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all"
+                                title="Registrar pago del huésped para desbloquear Check-out"
+                              >
+                                <CreditCard className="w-3.5 h-3.5" />
+                                Registrar Pago
+                              </button>
+                            )}
+
                             {/* Check-out Button */}
                             {res.status === 'checked_in' && (
-                              <div className="inline-block" title={!res.is_paid ? "Se requiere pago completo antes del Check-out" : ""}>
+                              <div className="inline-block" title={!res.is_paid ? "⚠️ Bloqueado: Primero registra el pago para habilitar el Check-out" : "Realizar salida y desocupar habitación"}>
                                 <button
                                   onClick={() => handleCheckOut(res.id)}
                                   disabled={actionLoading === res.id || !res.is_paid}
-                                  className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm transition-all ${
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold shadow-sm transition-all ${
                                     !res.is_paid 
-                                      ? 'bg-slate-300 text-slate-500 dark:text-slate-400 cursor-not-allowed opacity-60' 
+                                      ? 'bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-dashed border-slate-300 dark:border-slate-600' 
                                       : 'bg-amber-600 hover:bg-amber-700 text-white disabled:opacity-50'
                                   }`}
                                 >
                                   <LogOut className="w-3.5 h-3.5" />
-                                  Check-out
+                                  Check-out {!res.is_paid && '🔒'}
                                 </button>
                               </div>
-                            )}
-
-                            {/* Payment Button */}
-                            {res.payments?.find(p => p.status === 'pending') && !res.is_paid && (
-                              <button
-                                onClick={() => handleOpenPaymentModal(res, res.payments.find(p => p.status === 'pending').id)}
-                                className="inline-flex items-center gap-1 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all"
-                              >
-                                <CreditCard className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                                Registrar Pago
-                              </button>
                             )}
 
                             {/* Receipt Button */}
@@ -388,13 +414,13 @@ export default function CheckInOutPage() {
                   </label>
                   <select
                     value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-medium text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                    onChange={(e) => handleMethodChange(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-brand-500 focus:outline-none"
                   >
-                    <option value="credit_card">Tarjeta de Crédito</option>
-                    <option value="debit_card">Tarjeta de Débito</option>
-                    <option value="transfer">Transferencia</option>
-                    <option value="cash">Efectivo</option>
+                    <option value="cash">💵 Efectivo (Pago en recepción)</option>
+                    <option value="transfer">🏦 Transferencia Bancaria (Bancolombia / Nequi / Daviplata)</option>
+                    <option value="credit_card">💳 Tarjeta de Crédito</option>
+                    <option value="debit_card">💳 Tarjeta de Débito</option>
                   </select>
                 </div>
 

@@ -14,9 +14,13 @@ export default function NotificationBell() {
     if (!isAuthenticated) return;
     try {
       const res = await notificationsApi.getMyNotifications();
-      const notifs = res.data?.notifications || [];
+      const notifs = Array.isArray(res.data) ? res.data : (res.data?.notifications || []);
       setNotifications(notifs);
-      setUnreadCount(res.data?.unread_count || 0);
+      setUnreadCount(
+        res.data?.unread_count !== undefined 
+          ? res.data.unread_count 
+          : notifs.filter((n) => !n.is_read).length
+      );
     } catch {
       // Quiet fail if network glitch
     }
@@ -91,7 +95,9 @@ export default function NotificationBell() {
       case 'payment':
         return <CreditCard className="w-4 h-4 text-brand-600 shrink-0" />;
       case 'cancellation':
-        return <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0" />;
+        return <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 animate-pulse" />;
+      case 'warning':
+        return <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />;
       default:
         return <Info className="w-4 h-4 text-blue-500 shrink-0" />;
     }

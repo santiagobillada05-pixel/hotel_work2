@@ -64,6 +64,18 @@ export const normalizeReservation = (r) => {
   const baseTotal = Number(r.base_total !== undefined ? r.base_total : r.room_subtotal || 0);
   const taxAmount = Number(r.tax_amount || 0);
 
+  const paymentsList = Array.isArray(r.payments) ? r.payments : [];
+  const completedPayment = paymentsList.find((p) => p.status === 'completed');
+  const isPaid = Boolean(completedPayment) || Boolean(r.is_paid);
+  const paymentMethod = completedPayment?.payment_method || null;
+
+  // Extraer hora estimada de llegada de special_requests
+  const arrivalMatch = r.special_requests?.match(/\[Llegada estimada:\s*([^\]]+)\]/i);
+  const estimatedArrivalTime = arrivalMatch ? arrivalMatch[1].trim() : null;
+  const cleanRequests = r.special_requests 
+    ? r.special_requests.replace(/\[Llegada estimada:[^\]]+\]\s*/gi, '').trim()
+    : '';
+
   return {
     ...r,
     final_total: finalTotal,
@@ -71,6 +83,11 @@ export const normalizeReservation = (r) => {
     base_total: baseTotal,
     room_subtotal: baseTotal,
     tax_amount: taxAmount,
+    is_paid: isPaid,
+    completed_payment: completedPayment,
+    payment_method: paymentMethod,
+    estimated_arrival_time: estimatedArrivalTime,
+    clean_special_requests: cleanRequests,
     extras: Array.isArray(r.extras)
       ? r.extras
       : Array.isArray(r.reservation_extras)
@@ -116,6 +133,11 @@ export const reservationsApi = {
 
       const finalTotal = roomSubtotal + taxAmount + extrasTotal;
 
+      let specialRequestsContent = data.special_requests || null;
+      if (data.estimated_arrival_time) {
+        specialRequestsContent = `[Llegada estimada: ${data.estimated_arrival_time}] ${specialRequestsContent || ''}`.trim();
+      }
+
       const payload = {
         user_id: user.id,
         room_id: data.room_id,
@@ -127,7 +149,7 @@ export const reservationsApi = {
         tax_amount: taxAmount,
         discount_amount: 0,
         final_total: finalTotal,
-        special_requests: data.special_requests || null,
+        special_requests: specialRequestsContent,
       };
 
       const { data: reservation, error } = await supabase
@@ -205,7 +227,7 @@ export const reservationsApi = {
 
       const { data, error } = await supabase
         .from('reservations')
-        .select('*, room:rooms(*), user:users(*), extras:reservation_extras(*, extra_service:extra_services(*))')
+        .select('*, room:rooms(*), user:users(*), extras:reservation_extras(*, extra_service:extra_services(*)), payments:payments(*)')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -227,7 +249,7 @@ export const reservationsApi = {
     try {
       let query = supabase
         .from('reservations')
-        .select('*, room:rooms(*), user:users(*), extras:reservation_extras(*, extra_service:extra_services(*))')
+        .select('*, room:rooms(*), user:users(*), extras:reservation_extras(*, extra_service:extra_services(*)), payments:payments(*)')
         .order('created_at', { ascending: false });
 
       if (params.status) query = query.eq('status', params.status);
@@ -251,7 +273,7 @@ export const reservationsApi = {
     try {
       const { data, error } = await supabase
         .from('reservations')
-        .select('*, room:rooms(*), user:users(*), extras:reservation_extras(*, extra_service:extra_services(*))')
+        .select('*, room:rooms(*), user:users(*), extras:reservation_extras(*, extra_service:extra_services(*)), payments:payments(*)')
         .eq('id', id)
         .single();
       if (error) throw error;
@@ -315,19 +337,82 @@ export const reservationsApi = {
 
   checkOut: async (id) => {
     try {
+      const stored = localStorage.getItem('user');
+      const staffUser = stored ? JSON.parse(stored) : null;
+
       const { data: res, error } = await supabase
         .from('reservations')
         .update({ status: 'checked_out', checked_out_at: new Date().toISOString() })
         .eq('id', id)
-        .select('*, room:rooms(*)')
+        .select('*, room:rooms(*), user:users(*)')
         .single();
       if (error) throw error;
       if (res.room_id) {
         await supabase.from('rooms').update({ status: 'cleaning' }).eq('id', res.room_id);
       }
+
+      // Registrar en checkout_records para que figure en la Lista de Pagados / Arqueo
+      try {
+        await supabase.from('checkout_records').insert({
+          reservation_id: res.id,
+          staff_id: staffUser?.id || null,
+          room_id: res.room_id,
+          total_charged: res.final_total || 0,
+          damage_charges: 0,
+          room_condition_notes: 'Check-out completado en recepción con pago verificado.',
+        });
+      } catch (cErr) {
+        console.warn('Checkout record creation warning:', cErr);
+      }
+
+      // Notificar al huésped
+      try {
+        if (res.user_id) {
+          await supabase.from('notifications').insert({
+            user_id: res.user_id,
+            title: 'Check-out Realizado',
+            message: `Has completado tu salida de la Habitación ${res.room?.room_number || ''}. ¡Muchas gracias por alojarte con nosotros en HotelWork!`,
+            type: 'info',
+            is_read: false,
+          });
+        }
+      } catch (nErr) {
+        console.warn('Notification insert error:', nErr);
+      }
+
       return { success: true, data: normalizeReservation(res) };
     } catch (err) {
       return api.patch(`/reservations/${id}/check-out`);
+    }
+  },
+
+  updateArrivalTime: async (id, timeStr) => {
+    try {
+      const { data: existing, error: eErr } = await supabase
+        .from('reservations')
+        .select('special_requests')
+        .eq('id', id)
+        .single();
+      if (eErr) throw eErr;
+
+      const baseRequests = (existing?.special_requests || '')
+        .replace(/\[Llegada estimada:[^\]]+\]\s*/gi, '')
+        .trim();
+
+      const newSpecialRequests = `[Llegada estimada: ${timeStr}] ${baseRequests}`.trim();
+
+      const { data: updated, error: uErr } = await supabase
+        .from('reservations')
+        .update({ special_requests: newSpecialRequests })
+        .eq('id', id)
+        .select('*, room:rooms(*), user:users(*), payments:payments(*)')
+        .single();
+      if (uErr) throw uErr;
+
+      return { success: true, data: normalizeReservation(updated) };
+    } catch (err) {
+      console.warn('updateArrivalTime error:', err);
+      throw err;
     }
   },
 

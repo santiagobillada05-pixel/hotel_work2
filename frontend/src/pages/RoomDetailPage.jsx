@@ -47,6 +47,7 @@ export default function RoomDetailPage() {
 
   const [checkIn, setCheckIn] = useState(today);
   const [checkOut, setCheckOut] = useState(defaultCheckOut);
+  const [arrivalTime, setArrivalTime] = useState("3:00 PM (Check-in estándar)");
   const [numGuests, setNumGuests] = useState(1);
   const [specialRequests, setSpecialRequests] = useState("");
   const [selectedExtras, setSelectedExtras] = useState([]);
@@ -117,6 +118,7 @@ export default function RoomDetailPage() {
         check_in_date: checkIn,
         check_out_date: checkOut,
         num_guests: Number(numGuests),
+        estimated_arrival_time: arrivalTime,
         special_requests: specialRequests || null,
         selected_extras: selectedExtras,
       });
@@ -388,6 +390,32 @@ export default function RoomDetailPage() {
                         required
                         className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-brand-600" />
+                        Hora Estimada de Llegada
+                      </label>
+                      <select
+                        value={arrivalTime}
+                        onChange={(e) => setArrivalTime(e.target.value)}
+                        className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold focus:ring-2 focus:ring-brand-500 focus:outline-none"
+                      >
+                        <option value="12:00 PM">12:00 PM (Mediodía)</option>
+                        <option value="1:00 PM">1:00 PM</option>
+                        <option value="2:00 PM">2:00 PM (Check-in temprano)</option>
+                        <option value="3:00 PM (Check-in estándar)">3:00 PM (Check-in estándar)</option>
+                        <option value="4:00 PM">4:00 PM</option>
+                        <option value="5:00 PM">5:00 PM</option>
+                        <option value="6:00 PM">6:00 PM</option>
+                        <option value="7:00 PM">7:00 PM</option>
+                        <option value="8:00 PM">8:00 PM</option>
+                        <option value="9:00 PM">9:00 PM</option>
+                        <option value="10:00 PM">10:00 PM (Noche)</option>
+                        <option value="11:00 PM">11:00 PM (Llegada tardía)</option>
+                        <option value="Madrugada (12:00 AM - 5:00 AM)">Madrugada (12:00 AM - 5:00 AM)</option>
+                      </select>
                     </div>
 
                     <div>
