@@ -295,22 +295,26 @@ export default function ManageUsersPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Teléfono</label>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Teléfono (Solo Números)</label>
                 <input
-                  type="text"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={editForm.phone}
-                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                  placeholder="+57 300 000 0000"
+                  onChange={(e) => setEditForm({ ...editForm, phone: e.target.value.replace(/\D/g, '') })}
+                  placeholder="3001234567"
                   className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Documento (Cédula / Pasaporte)</label>
+                <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Cédula / Documento (Solo Números)</label>
                 <input
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={editForm.document_id}
-                  onChange={(e) => setEditForm({ ...editForm, document_id: e.target.value })}
-                  placeholder="CC-12345678"
+                  onChange={(e) => setEditForm({ ...editForm, document_id: e.target.value.replace(/\D/g, '') })}
+                  placeholder="1020304050"
                   className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
                 />
               </div>

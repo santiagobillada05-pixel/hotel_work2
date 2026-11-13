@@ -39,7 +39,11 @@ export default function RegisterPage() {
   const navigate = useNavigate();
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    let val = e.target.value;
+    if (e.target.name === 'phone' || e.target.name === 'document_id') {
+      val = val.replace(/\D/g, '');
+    }
+    setFormData({ ...formData, [e.target.name]: val });
     if (error) clearError();
   };
 
@@ -184,16 +188,18 @@ export default function RegisterPage() {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1.5">
-                Teléfono
+                Teléfono (Solo Números)
               </label>
               <div className="relative">
                 <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 <input
                   type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="+57 300 1234567"
+                  placeholder="3001234567"
                   className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
                 />
               </div>
@@ -201,16 +207,18 @@ export default function RegisterPage() {
 
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1.5">
-                Documento de Identidad
+                Cédula / Documento (Solo Números)
               </label>
               <div className="relative">
                 <CreditCard className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 <input
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   name="document_id"
                   value={formData.document_id}
                   onChange={handleChange}
-                  placeholder="CC o Pasaporte"
+                  placeholder="1020304050"
                   className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium"
                 />
               </div>

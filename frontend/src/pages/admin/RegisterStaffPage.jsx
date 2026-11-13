@@ -27,7 +27,11 @@ export default function RegisterStaffPage() {
   const [success, setSuccess] = useState(null);
 
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    let val = e.target.value;
+    if (e.target.name === 'phone' || e.target.name === 'document_id') {
+      val = val.replace(/\D/g, '');
+    }
+    setForm({ ...form, [e.target.name]: val });
   };
 
   const handleSubmit = async (e) => {
@@ -151,26 +155,30 @@ export default function RegisterStaffPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Teléfono</label>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Teléfono (Solo Números)</label>
               <input
-                type="text"
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                placeholder="+57 300 000 0000"
+                placeholder="3001234567"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Documento (Cédula / Pasaporte)</label>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-1">Cédula / Documento (Solo Números)</label>
               <input
                 type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 name="document_id"
                 value={form.document_id}
                 onChange={handleChange}
                 className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm focus:ring-2 focus:ring-brand-500 focus:outline-none"
-                placeholder="CC-12345678"
+                placeholder="1020304050"
               />
             </div>
 

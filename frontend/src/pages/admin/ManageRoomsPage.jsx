@@ -299,13 +299,15 @@ export default function ManageRoomsPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
-                      Numero
+                      Número (Solo Números)
                     </label>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       required
                       value={formData.room_number}
-                      onChange={(e) => setFormData({ ...formData, room_number: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, room_number: e.target.value.replace(/\D/g, '') })}
                       placeholder="101"
                       className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none"
                     />
@@ -331,15 +333,16 @@ export default function ManageRoomsPage() {
                 <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
-                      Tarifa
+                      Tarifa (Solo Números)
                     </label>
                     <div className="flex gap-2">
                       <input
-                        type="number"
-                        step="0.01"
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         required
                         value={formData.price_per_night}
-                        onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value })}
+                        onChange={(e) => setFormData({ ...formData, price_per_night: e.target.value.replace(/\D/g, '') })}
                         placeholder="150000"
                         className="w-2/3 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none"
                       />
@@ -351,27 +354,30 @@ export default function ManageRoomsPage() {
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
-                      Capacidad
+                      Capacidad (Solo Números)
                     </label>
                     <input
-                      type="number"
-                      min="1"
-                      max="10"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       required
                       value={formData.capacity}
-                      onChange={(e) => setFormData({ ...formData, capacity: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, capacity: e.target.value.replace(/\D/g, '') })}
+                      placeholder="2"
                       className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none"
                     />
                   </div>
 
                   <div>
                     <label className="block text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider mb-1">
-                      Piso
+                      Piso (Solo Números)
                     </label>
                     <input
                       type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={formData.floor}
-                      onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, floor: e.target.value.replace(/\D/g, '') })}
                       placeholder="1"
                       className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm font-medium focus:ring-2 focus:ring-brand-500 focus:outline-none"
                     />
