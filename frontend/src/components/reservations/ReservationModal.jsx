@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../store/authStore';
-import { reservationsApi } from '../../api/reservationsApi';
+import { reservationsApi, getLocalDateString, getFutureLocalDateString } from '../../api/reservationsApi';
 import BookingExtrasPicker from './BookingExtrasPicker';
 import { 
   X, 
@@ -24,12 +24,9 @@ export default function ReservationModal({ room, initialCheckIn, initialCheckOut
   const navigate = useNavigate();
   const isStaffOrAdmin = user?.role === 'admin' || user?.role === 'staff';
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const defaultCheckIn = initialCheckIn || today;
-  
-  const tomorrowDate = new Date();
-  tomorrowDate.setDate(tomorrowDate.getDate() + 1);
-  const defaultCheckOut = initialCheckOut || tomorrowDate.toISOString().split('T')[0];
+  const defaultCheckOut = initialCheckOut || getFutureLocalDateString(1);
 
   const [checkInDate, setCheckInDate] = useState(defaultCheckIn);
   const [checkOutDate, setCheckOutDate] = useState(defaultCheckOut);

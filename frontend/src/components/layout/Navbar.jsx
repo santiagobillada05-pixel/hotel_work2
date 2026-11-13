@@ -20,7 +20,8 @@ import {
   Menu,
   X,
   FileText,
-  MoreHorizontal
+  MoreHorizontal,
+  Sparkles
 } from 'lucide-react';
 
 function DropdownMenu({ label, icon: Icon, items }) {
@@ -134,6 +135,17 @@ export default function Navbar() {
                 >
                   Habitaciones
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate('/');
+                    window.dispatchEvent(new CustomEvent('open-hotelwork-welcome'));
+                  }}
+                  className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/40 px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-800 text-xs font-bold transition-all"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  Abrebocas
+                </button>
                 <Link
                   to="/terminos"
                   className="text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
@@ -152,6 +164,17 @@ export default function Navbar() {
                 >
                   Habitaciones
                 </Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigate('/');
+                    window.dispatchEvent(new CustomEvent('open-hotelwork-welcome'));
+                  }}
+                  className="flex items-center gap-1.5 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 dark:hover:bg-amber-900/40 px-3 py-1.5 rounded-xl border border-amber-200 dark:border-amber-800 text-xs font-bold transition-all"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                  Abrebocas
+                </button>
                 <Link
                   to="/my-reservations"
                   className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-brand-600 text-sm font-medium transition-colors"
@@ -284,12 +307,36 @@ export default function Navbar() {
             {!isAuthenticated && (
               <>
                 <Link to="/" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Habitaciones</Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    navigate('/');
+                    window.dispatchEvent(new CustomEvent('open-hotelwork-welcome'));
+                  }}
+                  className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl transition-colors"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  Ver Abrebocas (Servicios)
+                </button>
                 <Link to="/terminos" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Términos y Condiciones</Link>
               </>
             )}
             {isAuthenticated && user?.role === 'guest' && (
               <>
                 <Link to="/" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Habitaciones</Link>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileOpen(false);
+                    navigate('/');
+                    window.dispatchEvent(new CustomEvent('open-hotelwork-welcome'));
+                  }}
+                  className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-950/30 rounded-xl transition-colors"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  Ver Abrebocas (Servicios)
+                </button>
                 <Link to="/my-reservations" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Mis Reservas</Link>
                 <Link to="/manual" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Manual de usuario</Link>
                 <Link to="/terminos" onClick={() => setMobileOpen(false)} className="block px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-brand-600 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded-xl transition-colors">Términos y condiciones</Link>

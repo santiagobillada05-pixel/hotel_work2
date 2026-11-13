@@ -117,10 +117,10 @@ export default function MyReservationsPage() {
     );
   };
 
-  const getConfirmationInfo = (checkInDateStr, arrivalTimeStr) => {
+  const getConfirmationInfo = (checkInDateStr, arrivalTimeStr, createdAtStr = null) => {
     if (!checkInDateStr) return null;
     const now = new Date();
-    const deadlineInfo = getReservationDeadline(checkInDateStr, arrivalTimeStr);
+    const deadlineInfo = getReservationDeadline(checkInDateStr, arrivalTimeStr, createdAtStr);
     if (!deadlineInfo) return null;
 
     const { checkInDateTime, deadlineDateTime, timeLabel } = deadlineInfo;
@@ -255,7 +255,7 @@ export default function MyReservationsPage() {
         ) : (
           <div className="space-y-4">
             {reservations.map((res) => {
-              const confirmInfo = res.status === 'pending' ? getConfirmationInfo(res.check_in_date, res.estimated_arrival_time) : null;
+              const confirmInfo = res.status === 'pending' ? getConfirmationInfo(res.check_in_date, res.estimated_arrival_time, res.created_at) : null;
               const extras = res.extras || [];
               const extrasTotal = extras.reduce((sum, e) => sum + (e.subtotal || e.unit_price || 0), 0);
               const roomTotal = Number(res.final_total) > 0 && Number(res.final_total) < 2000

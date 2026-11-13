@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { roomsApi } from "../api/roomsApi";
-import { reservationsApi } from "../api/reservationsApi";
+import { reservationsApi, getLocalDateString, getFutureLocalDateString } from "../api/reservationsApi";
 import { useAuthStore } from "../store/authStore";
 import RoomCarousel from "../components/rooms/RoomCarousel";
 import BookingExtrasPicker from "../components/reservations/BookingExtrasPicker";
@@ -28,10 +28,8 @@ export default function RoomDetailPage() {
   const { user, isAuthenticated } = useAuthStore();
   const isStaffOrAdmin = user?.role === "admin" || user?.role === "staff";
 
-  const today = new Date().toISOString().split("T")[0];
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const defaultCheckOut = tomorrow.toISOString().split("T")[0];
+  const today = getLocalDateString();
+  const defaultCheckOut = getFutureLocalDateString(1);
 
   const [room, setRoom] = useState(null);
   const [loading, setLoading] = useState(true);

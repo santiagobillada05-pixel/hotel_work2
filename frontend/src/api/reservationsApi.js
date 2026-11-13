@@ -41,16 +41,46 @@ export const parseArrivalTimeToHourMinute = (timeStr) => {
   return { hours: 15, minutes: 0, label: '3:00 PM' };
 };
 
-export const getReservationDeadline = (checkInDateStr, arrivalTimeStr) => {
+export const getLocalDateString = (d = new Date()) => {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+export const getFutureLocalDateString = (daysAhead = 1) => {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return getLocalDateString(d);
+};
+
+export const getReservationDeadline = (checkInDateStr, arrivalTimeStr, createdAtStr = null) => {
   if (!checkInDateStr) return null;
-  const [cY, cM, cD] = checkInDateStr.split('-').map(Number);
+  const parts = checkInDateStr.split('-');
+  const cY = parseInt(parts[0], 10);
+  const cM = parseInt(parts[1], 10);
+  const cD = parseInt(parts[2], 10);
   const timeInfo = parseArrivalTimeToHourMinute(arrivalTimeStr);
 
-  // Fecha y hora exacta de check-in
+  // Fecha y hora exacta de check-in / llegada
   const checkInDateTime = new Date(cY, cM - 1, cD, timeInfo.hours, timeInfo.minutes, 0, 0);
 
-  // Plazo límite: exactamente 24 horas antes de la hora de llegada
-  const deadlineDateTime = new Date(checkInDateTime.getTime() - 24 * 60 * 60 * 1000);
+  const createdAt = createdAtStr ? new Date(createdAtStr) : new Date();
+
+  // Plazo ideal estándar: exactamente 24 horas antes de la hora de llegada
+  let deadlineDateTime = new Date(checkInDateTime.getTime() - 24 * 60 * 60 * 1000);
+
+  // Si la reserva se efectuó con menos de 24 horas de antelación al check-in:
+  if (deadlineDateTime.getTime() <= createdAt.getTime()) {
+    // Si faltan más de 4 horas para el check-in, el límite es 4 horas antes del check-in
+    const fourHoursBefore = new Date(checkInDateTime.getTime() - 4 * 60 * 60 * 1000);
+    if (fourHoursBefore.getTime() > createdAt.getTime()) {
+      deadlineDateTime = fourHoursBefore;
+    } else {
+      // Reserva de última hora (inminente): el límite es la misma hora de check-in
+      deadlineDateTime = checkInDateTime;
+    }
+  }
 
   return {
     checkInDateTime,
@@ -67,7 +97,13 @@ export const autoCancelExpiredReservations = async (reservations = []) => {
 
   for (const r of reservations) {
     if (r.status === 'pending' && r.check_in_date) {
-      const deadlineInfo = getReservationDeadline(r.check_in_date, r.estimated_arrival_time);
+      // Proteger reservas recién creadas: si tiene menos de 15 minutos de creada nunca cancelar
+      const createdAt = r.created_at ? new Date(r.created_at) : null;
+      if (createdAt && (now.getTime() - createdAt.getTime()) < 15 * 60 * 1000) {
+        continue;
+      }
+
+      const deadlineInfo = getReservationDeadline(r.check_in_date, r.estimated_arrival_time, r.created_at);
       if (deadlineInfo && now.getTime() >= deadlineInfo.deadlineDateTime.getTime()) {
         expiredIds.push(r.id);
       }

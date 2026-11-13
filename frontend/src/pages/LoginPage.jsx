@@ -22,6 +22,8 @@ export default function LoginPage() {
       } else if (user.role === 'staff') {
         navigate('/check-in-out');
       } else {
+        sessionStorage.setItem('hotelwork_show_welcome_guest', 'true');
+        sessionStorage.removeItem('hotelwork_welcome_seen');
         navigate(from === '/login' ? '/' : from);
       }
     } catch {

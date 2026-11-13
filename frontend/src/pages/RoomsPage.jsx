@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { roomsApi } from '../api/roomsApi';
+import { getLocalDateString, getFutureLocalDateString } from '../api/reservationsApi';
 import RoomCard from '../components/rooms/RoomCard';
 import ReservationModal from '../components/reservations/ReservationModal';
 import WelcomeModal from '../components/WelcomeModal';
@@ -21,22 +22,28 @@ export default function RoomsPage() {
   const { user, isAuthenticated } = useAuthStore();
   const navigate = useNavigate();
 
-  // El abre bocas se muestra al abrir la página por primera vez o si cerró la pestaña y volvió a entrar (sessionStorage)
+  // El abrebocas se muestra al iniciar sesión como huésped o si no se ha visto en la sesión
   const [showWelcome, setShowWelcome] = useState(() => {
+    if (sessionStorage.getItem('hotelwork_show_welcome_guest') === 'true') {
+      return true;
+    }
     return !sessionStorage.getItem('hotelwork_welcome_seen');
   });
 
   const handleCloseWelcome = () => {
+    sessionStorage.removeItem('hotelwork_show_welcome_guest');
     sessionStorage.setItem('hotelwork_welcome_seen', 'true');
     setShowWelcome(false);
   };
 
-  // Removido redirect agresivo para que admin y staff también puedan ver el catálogo y el abre bocas en cualquier momento.
+  useEffect(() => {
+    const handleOpenModal = () => setShowWelcome(true);
+    window.addEventListener('open-hotelwork-welcome', handleOpenModal);
+    return () => window.removeEventListener('open-hotelwork-welcome', handleOpenModal);
+  }, []);
 
-  const today = new Date().toISOString().split('T')[0];
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 2);
-  const defaultCheckOut = tomorrow.toISOString().split('T')[0];
+  const today = getLocalDateString();
+  const defaultCheckOut = getFutureLocalDateString(2);
 
   const [checkIn, setCheckIn] = useState(today);
   const [checkOut, setCheckOut] = useState(defaultCheckOut);
@@ -100,6 +107,16 @@ export default function RoomsPage() {
           <p className="text-slate-600 dark:text-slate-300 text-sm mt-2">
             Verifica disponibilidad en tiempo real, consulta tarifas transparentes y reserva en segundos.
           </p>
+          <div className="flex items-center justify-center gap-3 mt-4">
+            <button
+              type="button"
+              onClick={() => setShowWelcome(true)}
+              className="inline-flex items-center gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-amber-500/20 active:scale-95"
+            >
+              <Sparkles className="w-4 h-4" />
+              Ver Abrebocas (Servicios Incluidos y Comodidades)
+            </button>
+          </div>
         </div>
 
         {/* Search & Filter Box */}
